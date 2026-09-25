@@ -155,6 +155,21 @@ let studentAttendanceRecords = [];
 
 
 // ==========================================
+// HELPER - SAFE HTML
+// ==========================================
+
+function escapeHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// ==========================================
 // HELPER - LOCAL DATE
 // ==========================================
 
@@ -167,11 +182,11 @@ function getLocalDate() {
 
     const month =
         String(now.getMonth() + 1)
-        .padStart(2, "0");
+            .padStart(2, "0");
 
     const day =
         String(now.getDate())
-        .padStart(2, "0");
+            .padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 }
@@ -187,11 +202,11 @@ function getCurrentTime() {
 
     const hours =
         String(now.getHours())
-        .padStart(2, "0");
+            .padStart(2, "0");
 
     const minutes =
         String(now.getMinutes())
-        .padStart(2, "0");
+            .padStart(2, "0");
 
     return `${hours}:${minutes}`;
 }
@@ -314,7 +329,6 @@ function getStudentLocation() {
                         position.coords.longitude
 
                 });
-
             },
 
             (error) => {
@@ -366,27 +380,47 @@ function setAttendanceStatus(
 ) {
 
     if (statusIcon) {
-
-        statusIcon.textContent =
-            icon;
+        statusIcon.textContent = icon;
     }
 
     if (statusTitle) {
-
-        statusTitle.textContent =
-            title;
+        statusTitle.textContent = title;
     }
 
     if (statusMessage) {
-
-        statusMessage.textContent =
-            message;
+        statusMessage.textContent = message;
     }
 
     if (attendanceStatus) {
+        attendanceStatus.style.display = "block";
+    }
+}
 
-        attendanceStatus.style.display =
-            "block";
+
+// ==========================================
+// REGISTRATION MESSAGE
+// ==========================================
+
+function showRegistrationMessage(message) {
+
+    if (registrationMessage) {
+        registrationMessage.style.display = "block";
+    }
+
+    if (registrationMessageText) {
+        registrationMessageText.textContent = message;
+    }
+}
+
+
+// ==========================================
+// HIDE REGISTRATION MESSAGE
+// ==========================================
+
+function hideRegistrationMessage() {
+
+    if (registrationMessage) {
+        registrationMessage.style.display = "none";
     }
 }
 
@@ -399,34 +433,56 @@ onAuthStateChanged(
     auth,
     async (user) => {
 
-        if (!user) {
-
-            currentStudent = null;
-            studentProfile = null;
-
-            if (studentWelcome) {
-
-                studentWelcome.style.display =
-                    "none";
-            }
-
-            if (studentWelcomeActions) {
-
-                studentWelcomeActions.style.display =
-                    "none";
-            }
-
-            if (studentLoginLink) {
-
-                studentLoginLink.style.display =
-                    "inline-block";
-            }
-
-            return;
-        }
-
-
         try {
+
+            if (!user) {
+
+                currentStudent = null;
+                studentProfile = null;
+
+                if (studentWelcome) {
+
+                    studentWelcome.textContent =
+                        "Student Portal";
+                }
+
+                if (studentWelcomeText) {
+
+                    studentWelcomeText.textContent =
+                        "Login to access your AttendCheck account.";
+                }
+
+                if (studentMatric) {
+
+                    studentMatric.textContent =
+                        "Matric: -";
+                }
+
+                if (studentEmail) {
+
+                    studentEmail.textContent =
+                        "Email: -";
+                }
+
+                if (studentWelcomeActions) {
+
+                    studentWelcomeActions.style.display =
+                        "none";
+                }
+
+                if (studentLoginLink) {
+
+                    studentLoginLink.style.display =
+                        "block";
+                }
+
+                return;
+            }
+
+
+            // ======================================
+            // GET STUDENT PROFILE
+            // ======================================
 
             const userRef =
                 doc(
@@ -445,6 +501,12 @@ onAuthStateChanged(
                     "Student profile was not found."
                 );
 
+                setAttendanceStatus(
+                    "❌",
+                    "Profile Not Found",
+                    "Your student profile could not be found in the system."
+                );
+
                 return;
             }
 
@@ -453,9 +515,17 @@ onAuthStateChanged(
                 userSnap.data();
 
 
+            // ======================================
+            // CHECK ROLE
+            // ======================================
+
             if (data.role !== "student") {
 
                 await signOut(auth);
+
+                alert(
+                    "This account is not registered as a student account."
+                );
 
                 return;
             }
@@ -478,10 +548,44 @@ onAuthStateChanged(
             };
 
 
+            // ======================================
+            // DISPLAY STUDENT INFORMATION
+            // ======================================
+
             if (studentWelcome) {
 
-                studentWelcome.style.display =
-                    "block";
+                studentWelcome.textContent =
+                    "Student Portal";
+            }
+
+
+            if (studentWelcomeText) {
+
+                studentWelcomeText.textContent =
+                    `Welcome, ${
+                        studentProfile.fullName ||
+                        "Student"
+                    }`;
+            }
+
+
+            if (studentMatric) {
+
+                studentMatric.textContent =
+                    `Matric: ${
+                        studentProfile.matricNumber ||
+                        "-"
+                    }`;
+            }
+
+
+            if (studentEmail) {
+
+                studentEmail.textContent =
+                    `Email: ${
+                        studentProfile.email ||
+                        "-"
+                    }`;
             }
 
 
@@ -499,31 +603,70 @@ onAuthStateChanged(
             }
 
 
-            if (studentWelcomeText) {
+            // ======================================
+            // AUTO-FILL PROFILE INFORMATION
+            // ======================================
 
-                studentWelcomeText.textContent =
-                    `Welcome, ${
-                        studentProfile.fullName ||
-                        "Student"
-                    }`;
+            if (
+                studentProfile.department &&
+                studentDepartment
+            ) {
+
+                const departments =
+                    getDepartments();
+
+                const departmentMatch =
+                    departments.find(
+                        department =>
+                            String(department)
+                                .toLowerCase() ===
+                            String(
+                                studentProfile.department
+                            )
+                                .toLowerCase()
+                    );
+
+                if (departmentMatch) {
+
+                    studentDepartment.value =
+                        departmentMatch;
+
+                    loadLevels();
+                }
             }
 
 
-            if (studentMatric) {
+            if (
+                studentProfile.level &&
+                studentLevel
+            ) {
 
-                studentMatric.textContent =
-                    studentProfile.matricNumber ||
-                    "-";
+                const levelMatch =
+                    Array.from(
+                        studentLevel.options
+                    ).find(
+                        option =>
+                            String(option.value)
+                                .toLowerCase() ===
+                            String(
+                                studentProfile.level
+                            )
+                                .toLowerCase()
+                    );
+
+                if (levelMatch) {
+
+                    studentLevel.value =
+                        levelMatch.value;
+
+                    loadSemesters();
+                }
             }
 
 
-            if (studentEmail) {
-
-                studentEmail.textContent =
-                    studentProfile.email ||
-                    "-";
-            }
-
+            // ======================================
+            // LOAD DATA
+            // ======================================
 
             await loadRegisteredCourses();
 
@@ -534,6 +677,13 @@ onAuthStateChanged(
             console.error(
                 "Authentication error:",
                 error
+            );
+
+            setAttendanceStatus(
+                "❌",
+                "System Error",
+                error.message ||
+                "Unable to load your student account."
             );
         }
     }
@@ -590,7 +740,7 @@ function loadDepartments() {
 
 
     departments.forEach(
-        (department) => {
+        department => {
 
             const option =
                 document.createElement(
@@ -641,7 +791,7 @@ function loadLevels() {
 
 
     levels.forEach(
-        (level) => {
+        level => {
 
             const option =
                 document.createElement(
@@ -698,7 +848,7 @@ function loadSemesters() {
 
 
     semesters.forEach(
-        (sem) => {
+        sem => {
 
             const option =
                 document.createElement(
@@ -740,6 +890,9 @@ function loadCourseCatalog() {
         semester?.value;
 
 
+    hideRegistrationMessage();
+
+
     if (
         !department ||
         !level ||
@@ -755,12 +908,32 @@ function loadCourseCatalog() {
     }
 
 
-    const courses =
-        getCourses(
-            department,
-            level,
-            selectedSemester
+    let courses = [];
+
+
+    try {
+
+        courses =
+            getCourses(
+                department,
+                level,
+                selectedSemester
+            ) || [];
+
+    } catch (error) {
+
+        console.error(
+            "Course catalog error:",
+            error
         );
+
+        registrationCourseList.innerHTML =
+            `<p class="empty-state">
+                Unable to load courses.
+            </p>`;
+
+        return;
+    }
 
 
     if (!courses.length) {
@@ -782,9 +955,13 @@ function loadCourseCatalog() {
         (course, index) => {
 
             const courseCode =
-                course.code ||
-                course.courseCode ||
-                "---";
+                String(
+                    course.code ||
+                    course.courseCode ||
+                    "---"
+                )
+                .trim()
+                .toUpperCase();
 
 
             const courseTitle =
@@ -812,15 +989,15 @@ function loadCourseCatalog() {
                 <div>
 
                     <strong>
-                        ${courseCode}
+                        ${escapeHTML(courseCode)}
                     </strong>
 
                     <h4>
-                        ${courseTitle}
+                        ${escapeHTML(courseTitle)}
                     </h4>
 
                     <p>
-                        ${units}
+                        ${escapeHTML(units)}
                         Unit${units == 1 ? "" : "s"}
                     </p>
 
@@ -844,16 +1021,16 @@ function loadCourseCatalog() {
     );
 
 
-    document
+    registrationCourseList
         .querySelectorAll(
             ".register-course-btn"
         )
         .forEach(
-            (button) => {
+            button => {
 
                 button.addEventListener(
                     "click",
-                    () => {
+                    async () => {
 
                         const index =
                             Number(
@@ -863,8 +1040,13 @@ function loadCourseCatalog() {
                         const course =
                             courses[index];
 
-                        registerCourse(
-                            course
+                        if (!course) {
+                            return;
+                        }
+
+                        await registerCourse(
+                            course,
+                            button
                         );
                     }
                 );
@@ -877,7 +1059,10 @@ function loadCourseCatalog() {
 // REGISTER COURSE
 // ==========================================
 
-async function registerCourse(course) {
+async function registerCourse(
+    course,
+    button
+) {
 
     if (
         !currentStudent ||
@@ -893,16 +1078,31 @@ async function registerCourse(course) {
 
 
     const department =
-        studentDepartment?.value;
+        studentDepartment?.value || "";
 
     const level =
-        studentLevel?.value;
+        studentLevel?.value || "";
 
     const selectedSemester =
-        semester?.value;
+        semester?.value || "";
 
     const session =
-        academicSession?.value;
+        academicSession?.value || "";
+
+
+    if (
+        !department ||
+        !level ||
+        !selectedSemester ||
+        !session
+    ) {
+
+        showRegistrationMessage(
+            "Please select your department, level, academic session and semester."
+        );
+
+        return;
+    }
 
 
     const courseCode =
@@ -926,6 +1126,19 @@ async function registerCourse(course) {
 
 
     try {
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Checking...";
+        }
+
+
+        // ======================================
+        // CHECK DUPLICATE
+        // ======================================
 
         const existingQuery =
             query(
@@ -969,12 +1182,23 @@ async function registerCourse(course) {
         if (!existingSnapshot.empty) {
 
             showRegistrationMessage(
-                `${courseCode} is already registered.`
+                `${courseCode} is already registered for ${session} ${selectedSemester}.`
             );
 
             return;
         }
 
+
+        if (button) {
+
+            button.textContent =
+                "Registering...";
+        }
+
+
+        // ======================================
+        // SAVE REGISTRATION
+        // ======================================
 
         await addDoc(
             collection(
@@ -1014,16 +1238,16 @@ async function registerCourse(course) {
                     getCourseUnits(course),
 
                 department:
-                    department || "",
+                    department,
 
                 level:
-                    level || "",
+                    level,
 
                 session:
-                    session || "",
+                    session,
 
                 semester:
-                    selectedSemester || "",
+                    selectedSemester,
 
                 registeredAt:
                     serverTimestamp()
@@ -1038,6 +1262,7 @@ async function registerCourse(course) {
 
         await loadRegisteredCourses();
 
+
     } catch (error) {
 
         console.error(
@@ -1046,28 +1271,19 @@ async function registerCourse(course) {
         );
 
         showRegistrationMessage(
+            error.message ||
             "Unable to register this course. Please try again."
         );
-    }
-}
 
+    } finally {
 
-// ==========================================
-// REGISTRATION MESSAGE
-// ==========================================
+        if (button) {
 
-function showRegistrationMessage(message) {
+            button.disabled = false;
 
-    if (registrationMessage) {
-
-        registrationMessage.style.display =
-            "block";
-    }
-
-    if (registrationMessageText) {
-
-        registrationMessageText.textContent =
-            message;
+            button.textContent =
+                "Register Course";
+        }
     }
 }
 
@@ -1078,12 +1294,21 @@ function showRegistrationMessage(message) {
 
 async function loadRegisteredCourses() {
 
-    if (!currentStudent) {
+    if (
+        !currentStudent ||
+        !registeredCourseList
+    ) {
         return;
     }
 
 
     try {
+
+        registeredCourseList.innerHTML =
+            `<p class="empty-state">
+                Loading registered courses...
+            </p>`;
+
 
         const registrationQuery =
             query(
@@ -1110,7 +1335,7 @@ async function loadRegisteredCourses() {
 
 
         snapshot.forEach(
-            (docSnap) => {
+            docSnap => {
 
                 registeredCourses.push({
 
@@ -1124,7 +1349,28 @@ async function loadRegisteredCourses() {
         );
 
 
+        // ======================================
+        // SORT NEWEST REGISTRATIONS
+        // ======================================
+
+        registeredCourses.sort(
+            (a, b) => {
+
+                const timeA =
+                    a.registeredAt?.seconds ||
+                    0;
+
+                const timeB =
+                    b.registeredAt?.seconds ||
+                    0;
+
+                return timeB - timeA;
+            }
+        );
+
+
         renderRegisteredCourses();
+
 
     } catch (error) {
 
@@ -1132,6 +1378,11 @@ async function loadRegisteredCourses() {
             "Error loading registered courses:",
             error
         );
+
+        registeredCourseList.innerHTML =
+            `<p class="empty-state">
+                Unable to load registered courses.
+            </p>`;
     }
 }
 
@@ -1154,7 +1405,7 @@ function renderRegisteredCourses() {
     }
 
 
-    if (registeredCourses.length === 0) {
+    if (!registeredCourses.length) {
 
         registeredCourseList.innerHTML =
             `<p class="empty-state">
@@ -1162,20 +1413,32 @@ function renderRegisteredCourses() {
             </p>`;
 
 
-        if (selectedCourseCard) {
+        if (registeredSession) {
+            registeredSession.textContent = "-";
+        }
 
-            selectedCourseCard.style.display =
-                "none";
+
+        if (registeredSemester) {
+            registeredSemester.textContent = "-";
+        }
+
+
+        if (selectedCourseCard) {
+            selectedCourseCard.style.display = "none";
         }
 
         return;
     }
 
 
+    const latestCourse =
+        registeredCourses[0];
+
+
     if (registeredSession) {
 
         registeredSession.textContent =
-            registeredCourses[0].session ||
+            latestCourse.session ||
             "-";
     }
 
@@ -1183,7 +1446,7 @@ function renderRegisteredCourses() {
     if (registeredSemester) {
 
         registeredSemester.textContent =
-            registeredCourses[0].semester ||
+            latestCourse.semester ||
             "-";
     }
 
@@ -1210,17 +1473,45 @@ function renderRegisteredCourses() {
                 <div>
 
                     <strong>
-                        ${course.courseCode || "---"}
+                        ${escapeHTML(
+                            course.courseCode ||
+                            "---"
+                        )}
                     </strong>
 
                     <h4>
-                        ${course.courseTitle || "Untitled Course"}
+                        ${escapeHTML(
+                            course.courseTitle ||
+                            "Untitled Course"
+                        )}
                     </h4>
 
                     <p>
-                        ${course.units || "-"}
-                        Unit${course.units == 1 ? "" : "s"}
+                        ${escapeHTML(
+                            course.units ||
+                            "-"
+                        )}
+                        Unit${
+                            course.units == 1
+                                ? ""
+                                : "s"
+                        }
                     </p>
+
+                    <small>
+                        ${escapeHTML(
+                            course.session ||
+                            ""
+                        )}
+                        ${
+                            course.semester
+                                ? " • " +
+                                  escapeHTML(
+                                      course.semester
+                                  )
+                                : ""
+                        }
+                    </small>
 
                 </div>
 
@@ -1242,12 +1533,12 @@ function renderRegisteredCourses() {
     );
 
 
-    document
+    registeredCourseList
         .querySelectorAll(
             ".select-attendance-course"
         )
         .forEach(
-            (button) => {
+            button => {
 
                 button.addEventListener(
                     "click",
@@ -1258,9 +1549,15 @@ function renderRegisteredCourses() {
                                 button.dataset.index
                             );
 
-                        selectCourseForAttendance(
-                            registeredCourses[index]
-                        );
+                        const course =
+                            registeredCourses[index];
+
+                        if (course) {
+
+                            selectCourseForAttendance(
+                                course
+                            );
+                        }
                     }
                 );
             }
@@ -1288,29 +1585,45 @@ function selectCourseForAttendance(course) {
     if (selectedCourseTitle) {
 
         selectedCourseTitle.textContent =
-            `${course.courseCode || ""} - ${course.courseTitle || ""}`;
+            `${course.courseCode || ""} - ${
+                course.courseTitle || ""
+            }`;
     }
 
 
     if (selectedCourseLocation) {
 
         selectedCourseLocation.textContent =
-            "Attendance session location will be checked automatically.";
+            "The active attendance session will provide the location.";
     }
 
 
     if (selectedCourseRadius) {
 
         selectedCourseRadius.textContent =
-            "Session radius will be used.";
+            "Checked automatically";
     }
 
 
     setAttendanceStatus(
         "📍",
         "Ready for Attendance",
-        `Selected ${course.courseCode || "course"}. Enter the active attendance code when prompted.`
+        `Selected ${
+            course.courseCode ||
+            "course"
+        }. Enter the active attendance code when prompted.`
     );
+
+
+    // Scroll to attendance area
+
+    if (selectedCourseCard) {
+
+        selectedCourseCard.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
 }
 
 
@@ -1343,6 +1656,9 @@ if (studentDepartment) {
                         Select your level and semester.
                     </p>`;
             }
+
+
+            hideRegistrationMessage();
         }
     );
 }
@@ -1368,6 +1684,9 @@ if (studentLevel) {
                         Select your semester.
                     </p>`;
             }
+
+
+            hideRegistrationMessage();
         }
     );
 }
@@ -1384,6 +1703,25 @@ if (semester) {
         () => {
 
             loadCourseCatalog();
+        }
+    );
+}
+
+
+// ==========================================
+// SESSION CHANGE
+// ==========================================
+
+if (academicSession) {
+
+    academicSession.addEventListener(
+        "change",
+        () => {
+
+            hideRegistrationMessage();
+
+            // Keep current course list visible.
+            // Registration will use the selected session.
         }
     );
 }
@@ -1439,9 +1777,9 @@ if (checkLocationBtn) {
                     "Checking Attendance...";
 
 
-                // ======================================
-                // FIND ACTIVE SESSION
-                // ======================================
+                // ==================================
+                // COURSE CODE
+                // ==================================
 
                 const courseCode =
                     String(
@@ -1455,6 +1793,10 @@ if (checkLocationBtn) {
                 const today =
                     getLocalDate();
 
+
+                // ==================================
+                // FIND ACTIVE SESSION
+                // ==================================
 
                 const sessionsSnapshot =
                     await getDocs(
@@ -1473,7 +1815,7 @@ if (checkLocationBtn) {
 
 
                 sessionsSnapshot.forEach(
-                    (docSnap) => {
+                    docSnap => {
 
                         const session =
                             docSnap.data();
@@ -1524,9 +1866,9 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
-                // ASK FOR ATTENDANCE CODE
-                // ======================================
+                // ==================================
+                // ATTENDANCE CODE
+                // ==================================
 
                 const enteredCode =
                     prompt(
@@ -1534,7 +1876,10 @@ if (checkLocationBtn) {
                     );
 
 
-                if (!enteredCode) {
+                if (
+                    enteredCode === null ||
+                    String(enteredCode).trim() === ""
+                ) {
 
                     setAttendanceStatus(
                         "⚠️",
@@ -1576,9 +1921,9 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
+                // ==================================
                 // CHECK TIME
-                // ======================================
+                // ==================================
 
                 const currentTime =
                     getCurrentTime();
@@ -1624,13 +1969,12 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
+                // ==================================
                 // TESTING MODE
-                // ======================================
+                // ==================================
 
                 const testingMode =
-                    matchingSession.testingMode ===
-                    true;
+                    matchingSession.testingMode === true;
 
 
                 let studentLatitude =
@@ -1643,9 +1987,9 @@ if (checkLocationBtn) {
                     null;
 
 
-                // ======================================
-                // TESTING MODE ON
-                // ======================================
+                // ==================================
+                // TESTING MODE
+                // ==================================
 
                 if (testingMode) {
 
@@ -1680,6 +2024,7 @@ if (checkLocationBtn) {
                             );
 
 
+                        // FIXED SYNTAX ERROR
                         if (
                             Number.isFinite(
                                 classLat
@@ -1687,7 +2032,7 @@ if (checkLocationBtn) {
                             Number.isFinite(
                                 classLng
                             )
-                        {
+                        ) {
 
                             distance =
                                 calculateDistance(
@@ -1705,6 +2050,7 @@ if (checkLocationBtn) {
                             gpsError
                         );
                     }
+
 
                 } else {
 
@@ -1793,7 +2139,11 @@ if (checkLocationBtn) {
                         setAttendanceStatus(
                             "🚫",
                             "Outside Attendance Area",
-                            `You are approximately ${Math.round(distance)}m away. You must be within ${allowedRadius}m of the class location.`
+                            `You are approximately ${Math.round(
+                                distance
+                            )}m away. You must be within ${
+                                allowedRadius
+                            }m of the class location.`
                         );
 
                         return;
@@ -1801,9 +2151,9 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
+                // ==================================
                 // CHECK DUPLICATE ATTENDANCE
-                // ======================================
+                // ==================================
 
                 const duplicateQuery =
                     query(
@@ -1846,9 +2196,9 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
+                // ==================================
                 // SAVE ATTENDANCE
-                // ======================================
+                // ==================================
 
                 await addDoc(
                     collection(
@@ -1931,16 +2281,16 @@ if (checkLocationBtn) {
                 );
 
 
-                // ======================================
+                // ==================================
                 // SUCCESS
-                // ======================================
+                // ==================================
 
                 if (testingMode) {
 
                     setAttendanceStatus(
                         "🧪",
                         "Test Attendance Successful",
-                        "Attendance was successfully recorded in Testing Mode. GPS distance restrictions were bypassed."
+                        "Attendance was successfully recorded in Testing Mode."
                     );
 
                 } else {
@@ -1953,9 +2303,9 @@ if (checkLocationBtn) {
                 }
 
 
-                // ======================================
-                // REFRESH ATTENDANCE HISTORY
-                // ======================================
+                // ==================================
+                // REFRESH HISTORY
+                // ==================================
 
                 await loadStudentAttendanceHistory();
 
@@ -1989,7 +2339,7 @@ if (checkLocationBtn) {
 
 
 // ==========================================
-// LOAD STUDENT ATTENDANCE HISTORY
+// LOAD ATTENDANCE HISTORY
 // ==========================================
 
 async function loadStudentAttendanceHistory() {
@@ -2037,7 +2387,7 @@ async function loadStudentAttendanceHistory() {
 
 
         snapshot.forEach(
-            (docSnap) => {
+            docSnap => {
 
                 studentAttendanceRecords.push({
 
@@ -2051,9 +2401,9 @@ async function loadStudentAttendanceHistory() {
         );
 
 
-        // ======================================
-        // SORT NEWEST FIRST
-        // ======================================
+        // ==================================
+        // NEWEST FIRST
+        // ==================================
 
         studentAttendanceRecords.sort(
             (a, b) => {
@@ -2075,6 +2425,7 @@ async function loadStudentAttendanceHistory() {
 
         renderStudentAttendanceHistory();
 
+
     } catch (error) {
 
         console.error(
@@ -2094,7 +2445,7 @@ async function loadStudentAttendanceHistory() {
 
 
 // ==========================================
-// UPDATE ATTENDANCE STATS
+// ATTENDANCE STATS
 // ==========================================
 
 function updateStudentAttendanceStats() {
@@ -2105,7 +2456,7 @@ function updateStudentAttendanceStats() {
 
     const testAttendance =
         studentAttendanceRecords.filter(
-            (record) =>
+            record =>
                 record.testingMode === true ||
                 record.status === "Test Attendance"
         ).length;
@@ -2113,7 +2464,7 @@ function updateStudentAttendanceStats() {
 
     const normalAttendance =
         studentAttendanceRecords.filter(
-            (record) =>
+            record =>
                 record.status === "Present" &&
                 record.testingMode !== true
         ).length;
@@ -2142,7 +2493,7 @@ function updateStudentAttendanceStats() {
 
 
 // ==========================================
-// FORMAT ATTENDANCE TIME
+// FORMAT TIME
 // ==========================================
 
 function formatAttendanceTime(timestamp) {
@@ -2168,7 +2519,7 @@ function formatAttendanceTime(timestamp) {
 
 
 // ==========================================
-// FORMAT ATTENDANCE DATE
+// FORMAT DATE
 // ==========================================
 
 function formatAttendanceDate(date) {
@@ -2227,7 +2578,7 @@ function renderStudentAttendanceHistory() {
 
     const filteredRecords =
         studentAttendanceRecords.filter(
-            (record) => {
+            record => {
 
                 if (!searchTerm) {
                     return true;
@@ -2283,7 +2634,7 @@ function renderStudentAttendanceHistory() {
 
 
     filteredRecords.forEach(
-        (record) => {
+        record => {
 
             const isTesting =
                 record.testingMode === true ||
@@ -2291,12 +2642,18 @@ function renderStudentAttendanceHistory() {
                     "Test Attendance";
 
 
+            const numericDistance =
+                Number(
+                    record.distance
+                );
+
+
             const distance =
                 Number.isFinite(
-                    Number(record.distance)
+                    numericDistance
                 )
                     ? `${Math.round(
-                        Number(record.distance)
+                        numericDistance
                     )}m`
                     : "-";
 
@@ -2314,6 +2671,12 @@ function renderStudentAttendanceHistory() {
                     : "📍 Normal";
 
 
+            const statusClass =
+                isTesting
+                    ? "student-test-status"
+                    : "student-present-status";
+
+
             const row =
                 document.createElement(
                     "tr"
@@ -2325,35 +2688,31 @@ function renderStudentAttendanceHistory() {
                 <td>
 
                     <strong>
-                        ${
+                        ${escapeHTML(
                             record.courseCode ||
                             "---"
-                        }
+                        )}
                     </strong>
 
                     <small>
-                        ${
+                        ${escapeHTML(
                             record.courseTitle ||
                             ""
-                        }
+                        )}
                     </small>
 
                 </td>
 
                 <td>
-                    ${
-                        formatAttendanceDate(
-                            record.date
-                        )
-                    }
+                    ${formatAttendanceDate(
+                        record.date
+                    )}
                 </td>
 
                 <td>
-                    ${
-                        formatAttendanceTime(
-                            record.timestamp
-                        )
-                    }
+                    ${formatAttendanceTime(
+                        record.timestamp
+                    )}
                 </td>
 
                 <td>
@@ -2361,23 +2720,19 @@ function renderStudentAttendanceHistory() {
                 </td>
 
                 <td>
-                    <span class="${
-                        isTesting
-                            ? "student-test-status"
-                            : "student-present-status"
-                    }">
-                        ${statusText}
+
+                    <span class="${statusClass}">
+                        ${escapeHTML(statusText)}
                     </span>
+
                 </td>
 
                 <td>
-                    <span class="${
-                        isTesting
-                            ? "student-test-status"
-                            : "student-present-status"
-                    }">
-                        ${modeText}
+
+                    <span class="${statusClass}">
+                        ${escapeHTML(modeText)}
                     </span>
+
                 </td>
 
             `;
@@ -2392,7 +2747,7 @@ function renderStudentAttendanceHistory() {
 
 
 // ==========================================
-// ATTENDANCE HISTORY SEARCH
+// ATTENDANCE SEARCH
 // ==========================================
 
 if (studentAttendanceSearch) {
@@ -2408,7 +2763,7 @@ if (studentAttendanceSearch) {
 
 
 // ==========================================
-// ATTENDANCE HISTORY REFRESH
+// ATTENDANCE REFRESH
 // ==========================================
 
 if (refreshStudentAttendanceBtn) {
@@ -2427,6 +2782,13 @@ if (refreshStudentAttendanceBtn) {
             try {
 
                 await loadStudentAttendanceHistory();
+
+            } catch (error) {
+
+                console.error(
+                    "Refresh error:",
+                    error
+                );
 
             } finally {
 
