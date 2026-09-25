@@ -1,7 +1,7 @@
 // ==========================================
 // ATTENDCHECK - ADMIN SYSTEM
-// Course Setup + Sessions + Testing Mode
-// Attendance Records
+// Course Management + Attendance Sessions
+// Attendance Records + Testing Mode
 // ==========================================
 
 import { auth, db } from "./firebase.js";
@@ -19,6 +19,8 @@ import {
     getDoc,
     setDoc,
     updateDoc,
+    query,
+    where,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
@@ -43,9 +45,13 @@ const sessionDate = document.getElementById("sessionDate");
 const sessionStartTime = document.getElementById("sessionStartTime");
 const sessionEndTime = document.getElementById("sessionEndTime");
 const sessionMessage = document.getElementById("sessionMessage");
-const generatedCodeBox = document.getElementById("generatedCodeBox");
+
+const generatedCodeBox =
+    document.getElementById("generatedCodeBox");
+
 const generatedAttendanceCode =
     document.getElementById("generatedAttendanceCode");
+
 const copyAttendanceCodeBtn =
     document.getElementById("copyAttendanceCodeBtn");
 
@@ -95,6 +101,7 @@ let currentAdminProfile = null;
 
 let courses = [];
 let attendanceRecords = [];
+let attendanceSessions = [];
 
 let testingMode = false;
 
@@ -106,47 +113,70 @@ let testingMode = false;
 onAuthStateChanged(auth, async (user) => {
 
     if (!user) {
+
         window.location.replace("admin-auth.html");
+
         return;
     }
+
 
     try {
 
         const adminRef =
-            doc(db, "users", user.uid);
+            doc(
+                db,
+                "users",
+                user.uid
+            );
+
 
         const adminSnap =
             await getDoc(adminRef);
+
 
         if (!adminSnap.exists()) {
 
             await signOut(auth);
 
-            window.location.replace("admin-auth.html");
+            window.location.replace(
+                "admin-auth.html"
+            );
 
             return;
         }
 
+
         const adminData =
             adminSnap.data();
+
 
         if (adminData.role !== "admin") {
 
             await signOut(auth);
 
-            window.location.replace("admin-auth.html");
+            window.location.replace(
+                "admin-auth.html"
+            );
 
             return;
         }
 
-        currentAdmin = user;
 
-        currentAdminProfile = adminData;
+        currentAdmin =
+            user;
+
+        currentAdminProfile =
+            adminData;
+
 
         await loadTestingMode();
+
         await loadCourses();
+
         await loadActiveSessions();
+
         await loadAttendance();
+
 
     } catch (error) {
 
@@ -154,7 +184,9 @@ onAuthStateChanged(auth, async (user) => {
             "Admin authentication error:",
             error
         );
+
     }
+
 });
 
 
@@ -167,59 +199,76 @@ const logoutButtons =
         "#adminLogoutBtn, .admin-logout-btn"
     );
 
-logoutButtons.forEach((button) => {
 
-    button.addEventListener(
-        "click",
-        async () => {
+logoutButtons.forEach(
+    (button) => {
 
-            try {
+        button.addEventListener(
+            "click",
+            async () => {
 
-                await signOut(auth);
+                try {
 
-                window.location.replace(
-                    "admin-auth.html"
-                );
+                    await signOut(auth);
 
-            } catch (error) {
+                    window.location.replace(
+                        "admin-auth.html"
+                    );
 
-                console.error(
-                    "Logout error:",
-                    error
-                );
+                } catch (error) {
+
+                    console.error(
+                        "Logout error:",
+                        error
+                    );
+
+                }
+
             }
-        }
-    );
-});
+        );
+
+    }
+);
 
 
 // ==========================================
-// GET CURRENT DATE
+// LOCAL DATE
 // ==========================================
 
 function getLocalDate() {
 
-    const now = new Date();
+    const now =
+        new Date();
+
 
     const year =
         now.getFullYear();
 
+
     const month =
         String(
             now.getMonth() + 1
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
+
 
     const day =
         String(
             now.getDate()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
+
 
     return `${year}-${month}-${day}`;
 }
 
 
 // ==========================================
-// GENERATE 6 DIGIT CODE
+// GENERATE ATTENDANCE CODE
 // ==========================================
 
 function generateAttendanceCode() {
@@ -230,6 +279,7 @@ function generateAttendanceCode() {
             Math.random() * 900000
         )
     );
+
 }
 
 
@@ -248,22 +298,29 @@ async function loadTestingMode() {
                 "system"
             );
 
-        const settingsSnap =
-            await getDoc(settingsRef);
 
-        if (
-            settingsSnap.exists()
-        ) {
+        const settingsSnap =
+            await getDoc(
+                settingsRef
+            );
+
+
+        if (settingsSnap.exists()) {
 
             testingMode =
-                settingsSnap.data().testingMode === true;
+                settingsSnap.data()
+                    .testingMode === true;
 
         } else {
 
-            testingMode = false;
+            testingMode =
+                false;
+
         }
 
+
         updateTestingModeUI();
+
 
     } catch (error) {
 
@@ -272,10 +329,15 @@ async function loadTestingMode() {
             error
         );
 
-        testingMode = false;
+
+        testingMode =
+            false;
+
 
         updateTestingModeUI();
+
     }
+
 }
 
 
@@ -291,6 +353,7 @@ function updateTestingModeUI() {
             testingMode
                 ? "🧪 Testing Mode is active"
                 : "🔒 Testing Mode is OFF";
+
     }
 
 
@@ -300,6 +363,7 @@ function updateTestingModeUI() {
             testingMode
                 ? "Turn Testing Mode OFF"
                 : "Turn Testing Mode ON";
+
     }
 
 
@@ -307,9 +371,13 @@ function updateTestingModeUI() {
 
         testingModeMessage.textContent =
             testingMode
+
                 ? "🧪 Testing Mode is active. GPS distance restrictions can be bypassed for test attendance."
+
                 : "Normal attendance mode is active. Students must be within the configured GPS radius.";
+
     }
+
 }
 
 
@@ -327,9 +395,10 @@ if (testingModeBtn) {
                 return;
             }
 
+
             try {
 
-                testingMode =
+                const newMode =
                     !testingMode;
 
 
@@ -340,19 +409,25 @@ if (testingModeBtn) {
                         "system"
                     ),
                     {
+
                         testingMode:
-                            testingMode,
+                            newMode,
 
                         updatedBy:
                             currentAdmin.uid,
 
                         updatedAt:
                             serverTimestamp()
+
                     },
                     {
                         merge: true
                     }
                 );
+
+
+                testingMode =
+                    newMode;
 
 
                 updateTestingModeUI();
@@ -361,23 +436,23 @@ if (testingModeBtn) {
             } catch (error) {
 
                 console.error(
-                    "Could not update testing mode:",
+                    "Testing mode update failed:",
                     error
                 );
 
-                testingMode =
-                    !testingMode;
-
-                updateTestingModeUI();
 
                 if (testingModeMessage) {
 
                     testingModeMessage.textContent =
-                        "Unable to update Testing Mode. Please try again.";
+                        "❌ Unable to update Testing Mode.";
+
                 }
+
             }
+
         }
     );
+
 }
 
 
@@ -394,15 +469,19 @@ if (getLocationBtn) {
             if (!navigator.geolocation) {
 
                 if (locationMessage) {
+
                     locationMessage.textContent =
-                        "Geolocation is not supported by this browser.";
+                        "❌ Geolocation is not supported by this browser.";
+
                 }
 
                 return;
             }
 
 
-            getLocationBtn.disabled = true;
+            getLocationBtn.disabled =
+                true;
+
 
             getLocationBtn.textContent =
                 "Getting Location...";
@@ -420,13 +499,18 @@ if (getLocationBtn) {
 
 
                     if (latitudeInput) {
+
                         latitudeInput.value =
                             lat;
+
                     }
 
+
                     if (longitudeInput) {
+
                         longitudeInput.value =
                             lng;
+
                     }
 
 
@@ -434,6 +518,7 @@ if (getLocationBtn) {
 
                         classLocation.value =
                             `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
                     }
 
 
@@ -441,13 +526,16 @@ if (getLocationBtn) {
 
                         locationMessage.textContent =
                             "✅ Class location captured successfully.";
+
                     }
 
 
-                    getLocationBtn.disabled = false;
+                    getLocationBtn.disabled =
+                        false;
+
 
                     getLocationBtn.textContent =
-                        "Use My Current Location";
+                        "📍 Get My Current Location";
 
                 },
 
@@ -463,23 +551,37 @@ if (getLocationBtn) {
 
                         locationMessage.textContent =
                             "❌ Unable to get your location. Please allow location access.";
+
                     }
 
 
-                    getLocationBtn.disabled = false;
+                    getLocationBtn.disabled =
+                        false;
+
 
                     getLocationBtn.textContent =
-                        "Use My Current Location";
+                        "📍 Get My Current Location";
+
                 },
 
                 {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 0
+
+                    enableHighAccuracy:
+                        true,
+
+                    timeout:
+                        15000,
+
+                    maximumAge:
+                        0
+
                 }
+
             );
+
         }
     );
+
 }
 
 
@@ -506,23 +608,28 @@ if (courseForm) {
                     .trim()
                     .toUpperCase();
 
+
             const title =
                 courseTitle?.value
                     .trim();
 
+
             const location =
                 classLocation?.value
                     .trim();
+
 
             const latitude =
                 Number(
                     latitudeInput?.value
                 );
 
+
             const longitude =
                 Number(
                     longitudeInput?.value
                 );
+
 
             const radius =
                 Number(
@@ -533,6 +640,7 @@ if (courseForm) {
             if (
                 !code ||
                 !title ||
+                !location ||
                 !Number.isFinite(latitude) ||
                 !Number.isFinite(longitude) ||
                 !Number.isFinite(radius)
@@ -541,7 +649,8 @@ if (courseForm) {
                 if (locationMessage) {
 
                     locationMessage.textContent =
-                        "Please complete all course and location fields.";
+                        "❌ Please complete all course and location fields.";
+
                 }
 
                 return;
@@ -550,15 +659,56 @@ if (courseForm) {
 
             try {
 
+                // Prevent duplicate course codes
+
+                const existingQuery =
+                    query(
+                        collection(
+                            db,
+                            "courses"
+                        ),
+                        where(
+                            "code",
+                            "==",
+                            code
+                        )
+                    );
+
+
+                const existingSnapshot =
+                    await getDocs(
+                        existingQuery
+                    );
+
+
+                if (!existingSnapshot.empty) {
+
+                    if (locationMessage) {
+
+                        locationMessage.textContent =
+                            "⚠️ This course code already exists.";
+
+                    }
+
+                    return;
+                }
+
+
                 await addDoc(
                     collection(
                         db,
                         "courses"
                     ),
                     {
-                        code: code,
-                        title: title,
-                        location: location,
+
+                        code:
+                            code,
+
+                        title:
+                            title,
+
+                        location:
+                            location,
 
                         latitude:
                             latitude,
@@ -574,6 +724,7 @@ if (courseForm) {
 
                         createdBy:
                             currentAdmin.uid
+
                     }
                 );
 
@@ -582,12 +733,15 @@ if (courseForm) {
 
                     locationMessage.textContent =
                         "✅ Course created successfully.";
+
                 }
 
 
                 courseForm.reset();
 
+
                 await loadCourses();
+
 
             } catch (error) {
 
@@ -596,14 +750,19 @@ if (courseForm) {
                     error
                 );
 
+
                 if (locationMessage) {
 
                     locationMessage.textContent =
                         "❌ Unable to create course.";
+
                 }
+
             }
+
         }
     );
+
 }
 
 
@@ -631,15 +790,32 @@ async function loadCourses() {
             (docSnap) => {
 
                 courses.push({
-                    id: docSnap.id,
+
+                    id:
+                        docSnap.id,
+
                     ...docSnap.data()
+
                 });
 
             }
         );
 
 
+        courses.sort(
+            (a, b) =>
+                String(
+                    a.code || ""
+                ).localeCompare(
+                    String(
+                        b.code || ""
+                    )
+                )
+        );
+
+
         populateCourseDropdown();
+
 
     } catch (error) {
 
@@ -647,7 +823,9 @@ async function loadCourses() {
             "Loading courses failed:",
             error
         );
+
     }
+
 }
 
 
@@ -688,8 +866,10 @@ function populateCourseDropdown() {
             sessionCourse.appendChild(
                 option
             );
+
         }
     );
+
 }
 
 
@@ -715,10 +895,46 @@ if (sessionForm) {
                 sessionCourse?.value;
 
 
+            const date =
+                sessionDate?.value;
+
+
+            const startTime =
+                sessionStartTime?.value;
+
+
+            const endTime =
+                sessionEndTime?.value;
+
+
             if (!selectedCourseId) {
 
                 showSessionMessage(
-                    "Please select a course."
+                    "❌ Please select a course."
+                );
+
+                return;
+            }
+
+
+            if (
+                !date ||
+                !startTime ||
+                !endTime
+            ) {
+
+                showSessionMessage(
+                    "❌ Please complete the date and time."
+                );
+
+                return;
+            }
+
+
+            if (endTime <= startTime) {
+
+                showSessionMessage(
+                    "❌ End time must be later than start time."
                 );
 
                 return;
@@ -736,54 +952,95 @@ if (sessionForm) {
             if (!selectedCourse) {
 
                 showSessionMessage(
-                    "Selected course could not be found."
+                    "❌ Selected course could not be found."
                 );
 
                 return;
             }
-
-
-            const date =
-                sessionDate?.value;
-
-
-            const startTime =
-                sessionStartTime?.value;
-
-
-            const endTime =
-                sessionEndTime?.value;
-
-
-            if (
-                !date ||
-                !startTime ||
-                !endTime
-            ) {
-
-                showSessionMessage(
-                    "Please complete the session date and time."
-                );
-
-                return;
-            }
-
-
-            if (endTime <= startTime) {
-
-                showSessionMessage(
-                    "End time must be later than start time."
-                );
-
-                return;
-            }
-
-
-            const attendanceCode =
-                generateAttendanceCode();
 
 
             try {
+
+                // ======================================
+                // CHECK DUPLICATE ACTIVE SESSION
+                // ======================================
+
+                const existingQuery =
+                    query(
+                        collection(
+                            db,
+                            "attendanceSessions"
+                        ),
+                        where(
+                            "courseId",
+                            "==",
+                            selectedCourse.id
+                        ),
+                        where(
+                            "date",
+                            "==",
+                            date
+                        ),
+                        where(
+                            "active",
+                            "==",
+                            true
+                        )
+                    );
+
+
+                const existingSnapshot =
+                    await getDocs(
+                        existingQuery
+                    );
+
+
+                let duplicate =
+                    false;
+
+
+                existingSnapshot.forEach(
+                    (docSnap) => {
+
+                        const existing =
+                            docSnap.data();
+
+
+                        if (
+                            existing.startTime ===
+                                startTime ||
+
+                            (
+                                startTime <
+                                    existing.endTime &&
+
+                                endTime >
+                                    existing.startTime
+                            )
+                        ) {
+
+                            duplicate =
+                                true;
+
+                        }
+
+                    }
+                );
+
+
+                if (duplicate) {
+
+                    showSessionMessage(
+                        "⚠️ An active session already exists for this course during this time."
+                    );
+
+                    return;
+                }
+
+
+                const attendanceCode =
+                    generateAttendanceCode();
+
 
                 await addDoc(
                     collection(
@@ -839,13 +1096,16 @@ if (sessionForm) {
 
                         testingMode:
                             testingMode === true
+
                     }
                 );
 
 
                 if (generatedCodeBox) {
+
                     generatedCodeBox.style.display =
                         "block";
+
                 }
 
 
@@ -853,20 +1113,34 @@ if (sessionForm) {
 
                     generatedAttendanceCode.textContent =
                         attendanceCode;
+
                 }
 
 
                 showSessionMessage(
+
                     testingMode
+
                         ? "🧪 Test attendance session created successfully."
+
                         : "✅ Attendance session created successfully."
+
                 );
 
 
                 sessionForm.reset();
 
 
+                if (sessionDate) {
+
+                    sessionDate.value =
+                        getLocalDate();
+
+                }
+
+
                 await loadActiveSessions();
+
 
             } catch (error) {
 
@@ -875,12 +1149,16 @@ if (sessionForm) {
                     error
                 );
 
+
                 showSessionMessage(
                     "❌ Unable to create attendance session."
                 );
+
             }
+
         }
     );
+
 }
 
 
@@ -888,12 +1166,17 @@ if (sessionForm) {
 // SESSION MESSAGE
 // ==========================================
 
-function showSessionMessage(message) {
+function showSessionMessage(
+    message
+) {
 
     if (sessionMessage) {
+
         sessionMessage.textContent =
             message;
+
     }
+
 }
 
 
@@ -919,7 +1202,7 @@ async function loadActiveSessions() {
             );
 
 
-        const sessions = [];
+        attendanceSessions = [];
 
 
         snapshot.forEach(
@@ -931,16 +1214,93 @@ async function loadActiveSessions() {
 
                 if (data.active === true) {
 
-                    sessions.push({
-                        id: docSnap.id,
+                    attendanceSessions.push({
+
+                        id:
+                            docSnap.id,
+
                         ...data
+
                     });
+
                 }
+
             }
         );
 
 
-        sessions.sort(
+        // ======================================
+        // AUTO-DEACTIVATE EXPIRED SESSIONS
+        // ======================================
+
+        const now =
+            new Date();
+
+
+        for (
+            const session
+            of attendanceSessions
+        ) {
+
+            if (
+                isSessionExpired(
+                    session,
+                    now
+                )
+            ) {
+
+                try {
+
+                    await updateDoc(
+                        doc(
+                            db,
+                            "attendanceSessions",
+                            session.id
+                        ),
+                        {
+
+                            active:
+                                false,
+
+                            closedAt:
+                                serverTimestamp(),
+
+                            closedBy:
+                                currentAdmin?.uid || null,
+
+                            autoClosed:
+                                true
+
+                        }
+                    );
+
+
+                    session.active =
+                        false;
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Auto-close failed:",
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        attendanceSessions =
+            attendanceSessions.filter(
+                (session) =>
+                    session.active === true
+            );
+
+
+        attendanceSessions.sort(
             (a, b) => {
 
                 const first =
@@ -952,12 +1312,13 @@ async function loadActiveSessions() {
                 return second.localeCompare(
                     first
                 );
+
             }
         );
 
 
         renderActiveSessions(
-            sessions
+            attendanceSessions
         );
 
 
@@ -972,9 +1333,39 @@ async function loadActiveSessions() {
         if (sessionsMessage) {
 
             sessionsMessage.textContent =
-                "Unable to load active sessions.";
+                "❌ Unable to load active sessions.";
+
         }
+
     }
+
+}
+
+
+// ==========================================
+// CHECK SESSION EXPIRY
+// ==========================================
+
+function isSessionExpired(
+    session,
+    now = new Date()
+) {
+
+    if (!session.date || !session.endTime) {
+
+        return false;
+
+    }
+
+
+    const end =
+        new Date(
+            `${session.date}T${session.endTime}:00`
+        );
+
+
+    return now >= end;
+
 }
 
 
@@ -982,7 +1373,9 @@ async function loadActiveSessions() {
 // RENDER ACTIVE SESSIONS
 // ==========================================
 
-function renderActiveSessions(sessions) {
+function renderActiveSessions(
+    sessions
+) {
 
     if (!activeSessionsList) {
         return;
@@ -992,15 +1385,22 @@ function renderActiveSessions(sessions) {
     if (!sessions.length) {
 
         activeSessionsList.innerHTML =
-            `<div class="empty-state">
-                No active attendance sessions.
-            </div>`;
+            `
+            <div class="empty-state">
+
+                <p>
+                    No active attendance sessions.
+                </p>
+
+            </div>
+            `;
 
         return;
     }
 
 
-    activeSessionsList.innerHTML = "";
+    activeSessionsList.innerHTML =
+        "";
 
 
     sessions.forEach(
@@ -1018,8 +1418,22 @@ function renderActiveSessions(sessions) {
 
             const modeText =
                 session.testingMode === true
+
                     ? "🧪 Testing Mode"
+
                     : "📍 Normal Mode";
+
+
+            const radius =
+                Number.isFinite(
+                    Number(
+                        session.radius
+                    )
+                )
+
+                    ? `${session.radius}m`
+
+                    : "Not set";
 
 
             card.innerHTML = `
@@ -1033,29 +1447,50 @@ function renderActiveSessions(sessions) {
                         </span>
 
                         <h3>
-                            ${session.courseCode || "---"}
+                            ${escapeHTML(
+                                session.courseCode || "---"
+                            )}
                         </h3>
 
                         <p>
-                            ${session.courseTitle || "Untitled Course"}
+                            ${escapeHTML(
+                                session.courseTitle ||
+                                "Untitled Course"
+                            )}
                         </p>
 
                         <div class="session-details">
 
                             <span>
-                                📅 ${session.date || "-"}
+                                📅 ${escapeHTML(
+                                    session.date || "-"
+                                )}
                             </span>
 
                             <span>
-                                🕐 ${session.startTime || "--:--"}
+                                🕐 ${escapeHTML(
+                                    session.startTime || "--:--"
+                                )}
                                 -
-                                ${session.endTime || "--:--"}
+                                ${escapeHTML(
+                                    session.endTime || "--:--"
+                                )}
+                            </span>
+
+                            <span>
+                                📍 Radius:
+                                <strong>
+                                    ${radius}
+                                </strong>
                             </span>
 
                             <span>
                                 🔢 Code:
                                 <strong>
-                                    ${session.code || "------"}
+                                    ${escapeHTML(
+                                        session.code ||
+                                        "------"
+                                    )}
                                 </strong>
                             </span>
 
@@ -1087,6 +1522,7 @@ function renderActiveSessions(sessions) {
             activeSessionsList.appendChild(
                 card
             );
+
         }
     );
 
@@ -1105,10 +1541,13 @@ function renderActiveSessions(sessions) {
                         closeSession(
                             button.dataset.id
                         );
+
                     }
                 );
+
             }
         );
+
 }
 
 
@@ -1120,8 +1559,13 @@ async function closeSession(
     sessionId
 ) {
 
-    if (!sessionId || !currentAdmin) {
+    if (
+        !sessionId ||
+        !currentAdmin
+    ) {
+
         return;
+
     }
 
 
@@ -1145,13 +1589,19 @@ async function closeSession(
                 sessionId
             ),
             {
-                active: false,
+
+                active:
+                    false,
 
                 closedAt:
                     serverTimestamp(),
 
                 closedBy:
-                    currentAdmin.uid
+                    currentAdmin.uid,
+
+                autoClosed:
+                    false
+
             }
         );
 
@@ -1160,6 +1610,7 @@ async function closeSession(
 
             sessionsMessage.textContent =
                 "✅ Attendance session closed.";
+
         }
 
 
@@ -1178,8 +1629,11 @@ async function closeSession(
 
             sessionsMessage.textContent =
                 "❌ Unable to close attendance session.";
+
         }
+
     }
+
 }
 
 
@@ -1205,15 +1659,20 @@ async function loadAttendance() {
             );
 
 
-        attendanceRecords = [];
+        attendanceRecords =
+            [];
 
 
         snapshot.forEach(
             (docSnap) => {
 
                 attendanceRecords.push({
-                    id: docSnap.id,
+
+                    id:
+                        docSnap.id,
+
                     ...docSnap.data()
+
                 });
 
             }
@@ -1227,11 +1686,14 @@ async function loadAttendance() {
                     a.timestamp?.seconds ||
                     0;
 
+
                 const timeB =
                     b.timestamp?.seconds ||
                     0;
 
+
                 return timeB - timeA;
+
             }
         );
 
@@ -1255,12 +1717,18 @@ async function loadAttendance() {
 
 
         attendanceTableBody.innerHTML =
-            `<tr>
-                <td colspan="10">
-                    Unable to load attendance records.
+            `
+            <tr>
+
+                <td colspan="7">
+                    ❌ Unable to load attendance records.
                 </td>
-            </tr>`;
+
+            </tr>
+            `;
+
     }
+
 }
 
 
@@ -1295,7 +1763,9 @@ function updateAttendanceStats(
                 students.add(
                     record.studentId
                 );
+
             }
+
         }
     );
 
@@ -1304,6 +1774,7 @@ function updateAttendanceStats(
 
         totalAttendance.textContent =
             records.length;
+
     }
 
 
@@ -1311,6 +1782,7 @@ function updateAttendanceStats(
 
         todayAttendance.textContent =
             todayRecords.length;
+
     }
 
 
@@ -1318,7 +1790,9 @@ function updateAttendanceStats(
 
         uniqueStudents.textContent =
             students.size;
+
     }
+
 }
 
 
@@ -1367,14 +1841,15 @@ function renderAttendanceTable(
                     record.status
 
                 ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
 
 
                 return searchableText.includes(
                     searchTerm
                 );
+
             }
         );
 
@@ -1382,17 +1857,22 @@ function renderAttendanceTable(
     if (!filtered.length) {
 
         attendanceTableBody.innerHTML =
-            `<tr>
-                <td colspan="10">
+            `
+            <tr>
+
+                <td colspan="7">
                     No attendance records found.
                 </td>
-            </tr>`;
+
+            </tr>
+            `;
 
         return;
     }
 
 
-    attendanceTableBody.innerHTML = "";
+    attendanceTableBody.innerHTML =
+        "";
 
 
     filtered.forEach(
@@ -1431,10 +1911,14 @@ function renderAttendanceTable(
                     ).toLocaleTimeString(
                         [],
                         {
-                            hour: "2-digit",
-                            minute: "2-digit"
+                            hour:
+                                "2-digit",
+
+                            minute:
+                                "2-digit"
                         }
                     );
+
             }
 
 
@@ -1446,61 +1930,116 @@ function renderAttendanceTable(
                 record.distance !== null &&
                 record.distance !== undefined &&
                 Number.isFinite(
-                    Number(record.distance)
+                    Number(
+                        record.distance
+                    )
                 )
             ) {
 
                 distanceText =
                     `${Math.round(
-                        Number(record.distance)
+                        Number(
+                            record.distance
+                        )
                     )}m`;
+
             }
+
+
+            const radiusText =
+                Number.isFinite(
+                    Number(
+                        record.radius
+                    )
+                )
+
+                    ? `${record.radius}m`
+
+                    : "-";
 
 
             row.innerHTML = `
 
                 <td>
+
                     <strong>
-                        ${record.studentName || "-"}
+                        ${escapeHTML(
+                            record.studentName ||
+                            "-"
+                        )}
                     </strong>
+
                     <small>
-                        ${record.email || ""}
+                        ${escapeHTML(
+                            record.email ||
+                            ""
+                        )}
                     </small>
+
                 </td>
 
-                <td>
-                    ${record.matricNumber || "-"}
-                </td>
 
                 <td>
+                    ${escapeHTML(
+                        record.matricNumber ||
+                        "-"
+                    )}
+                </td>
+
+
+                <td>
+
                     <strong>
-                        ${record.courseCode || "-"}
+                        ${escapeHTML(
+                            record.courseCode ||
+                            "-"
+                        )}
                     </strong>
+
                     <small>
-                        ${record.courseTitle || ""}
+                        ${escapeHTML(
+                            record.courseTitle ||
+                            ""
+                        )}
                     </small>
+
                 </td>
 
+
                 <td>
-                    ${record.date || "-"}
+                    ${escapeHTML(
+                        record.date ||
+                        "-"
+                    )}
                 </td>
+
 
                 <td>
                     ${timestamp}
                 </td>
 
+
                 <td>
                     ${distanceText}
                 </td>
 
-                <td>
-                    ${record.radius || "-"}m
-                </td>
 
                 <td>
-                    <span class="${isTest ? "test-status" : "present-status"}">
+
+                    <span class="${
+                        isTest
+                            ? "test-status"
+                            : "present-status"
+                    }">
+
                         ${status}
+
                     </span>
+
+                    <small>
+                        Radius: ${radiusText}
+                    </small>
+
                 </td>
 
             `;
@@ -1509,8 +2048,10 @@ function renderAttendanceTable(
             attendanceTableBody.appendChild(
                 row
             );
+
         }
     );
+
 }
 
 
@@ -1527,8 +2068,10 @@ if (attendanceSearch) {
             renderAttendanceTable(
                 attendanceRecords
             );
+
         }
     );
+
 }
 
 
@@ -1558,14 +2101,16 @@ if (refreshAttendanceBtn) {
 
 
             refreshAttendanceBtn.textContent =
-                "Refresh Attendance";
+                "🔄 Refresh Attendance";
+
         }
     );
+
 }
 
 
 // ==========================================
-// REFRESH ACTIVE SESSIONS
+// REFRESH SESSIONS
 // ==========================================
 
 if (refreshSessionsBtn) {
@@ -1590,9 +2135,11 @@ if (refreshSessionsBtn) {
 
 
             refreshSessionsBtn.textContent =
-                "Refresh Sessions";
+                "🔄 Refresh Sessions";
+
         }
     );
+
 }
 
 
@@ -1632,11 +2179,12 @@ if (copyAttendanceCodeBtn) {
                     () => {
 
                         copyAttendanceCodeBtn.textContent =
-                            "Copy Code";
+                            "📋 Copy Code";
 
                     },
                     2000
                 );
+
 
             } catch (error) {
 
@@ -1644,9 +2192,67 @@ if (copyAttendanceCodeBtn) {
                     "Copy failed:",
                     error
                 );
+
+
+                // Fallback
+
+                const textArea =
+                    document.createElement(
+                        "textarea"
+                    );
+
+
+                textArea.value =
+                    code;
+
+
+                document.body.appendChild(
+                    textArea
+                );
+
+
+                textArea.select();
+
+
+                try {
+
+                    document.execCommand(
+                        "copy"
+                    );
+
+                    copyAttendanceCodeBtn.textContent =
+                        "Copied ✓";
+
+                } catch (copyError) {
+
+                    console.error(
+                        "Fallback copy failed:",
+                        copyError
+                    );
+
+                }
+
+
+                document.body.removeChild(
+                    textArea
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        copyAttendanceCodeBtn.textContent =
+                            "📋 Copy Code";
+
+                    },
+                    2000
+                );
+
             }
+
         }
     );
+
 }
 
 
@@ -1658,4 +2264,40 @@ if (sessionDate) {
 
     sessionDate.value =
         getLocalDate();
+
+}
+
+
+// ==========================================
+// ESCAPE HTML
+// ==========================================
+
+function escapeHTML(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
 }
