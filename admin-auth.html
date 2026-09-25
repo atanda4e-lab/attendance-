@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Login - AttendCheck</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="site-header">
+
+        <div class="container nav-container">
+
+            <a href="index.html" class="logo">
+                <span class="logo-icon">✓</span>
+                <span>AttendCheck</span>
+            </a>
+
+            <nav class="main-nav">
+
+                <a href="index.html">Home</a>
+
+                <a href="student.html">Student Portal</a>
+
+                <a href="admin-auth.html" class="active">
+                    Admin Portal
+                </a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <section class="auth-section">
+
+            <div class="auth-container">
+
+                <div class="auth-card">
+
+                    <div class="auth-icon">
+                        🔐
+                    </div>
+
+                    <h1>
+                        Administrator Login
+                    </h1>
+
+                    <p class="auth-subtitle">
+                        Login to access the AttendCheck administrator dashboard.
+                    </p>
+
+
+                    <form id="adminLoginForm">
+
+                        <div class="form-group">
+
+                            <label for="adminEmail">
+                                Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                id="adminEmail"
+                                placeholder="Enter admin email"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="adminPassword">
+                                Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="adminPassword"
+                                placeholder="Enter password"
+                                required
+                            >
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="primary-btn auth-submit"
+                        >
+                            Login as Administrator
+                        </button>
+
+
+                        <p
+                            id="adminAuthMessage"
+                            class="auth-message"
+                        ></p>
+
+                    </form>
+
+
+                    <div class="auth-divider">
+                        <span>OR</span>
+                    </div>
+
+
+                    <a
+                        href="auth.html"
+                        class="auth-link"
+                    >
+                        Student Login / Registration
+                    </a>
+
+
+                    <a
+                        href="index.html"
+                        class="back-home"
+                    >
+                        ← Back to Home
+                    </a>
+
+                </div>
+
+
+                <div class="auth-info">
+
+                    <h2>
+                        Administrator Access
+                    </h2>
+
+                    <p>
+                        Authorized administrators can manage courses,
+                        classroom locations and student attendance.
+                    </p>
+
+                    <div class="auth-info-list">
+
+                        <div>
+                            ✓ Course Management
+                        </div>
+
+                        <div>
+                            ✓ Location Configuration
+                        </div>
+
+                        <div>
+                            ✓ Attendance Monitoring
+                        </div>
+
+                        <div>
+                            ✓ Student Attendance Records
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer class="site-footer">
+
+        <div class="container footer-bottom">
+
+            <p>
+                © 2026 AttendCheck. All rights reserved.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <script type="module" src="admin-auth.js"></script>
+
+</body>
+
+</html>
