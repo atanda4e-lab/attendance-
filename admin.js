@@ -1,7 +1,6 @@
 // ==========================================
 // ATTENDCHECK - ADMIN SYSTEM
-// Course Management + Attendance Sessions
-// Attendance Records + Testing Mode
+// Course Management + Attendance Management
 // ==========================================
 
 import { auth, db } from "./firebase.js";
@@ -19,1166 +18,877 @@ import {
     getDoc,
     setDoc,
     updateDoc,
-    query,
-    where,
+    deleteDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-
 // ==========================================
-// ELEMENTS
-// ==========================================
-
-const courseForm = document.getElementById("courseForm");
-const courseCode = document.getElementById("courseCode");
-const courseTitle = document.getElementById("courseTitle");
-const classLocation = document.getElementById("classLocation");
-const getLocationBtn = document.getElementById("getLocationBtn");
-const locationMessage = document.getElementById("locationMessage");
-const latitudeInput = document.getElementById("latitude");
-const longitudeInput = document.getElementById("longitude");
-const radiusInput = document.getElementById("radius");
-
-const sessionForm = document.getElementById("sessionForm");
-const sessionCourse = document.getElementById("sessionCourse");
-const sessionDate = document.getElementById("sessionDate");
-const sessionStartTime = document.getElementById("sessionStartTime");
-const sessionEndTime = document.getElementById("sessionEndTime");
-const sessionMessage = document.getElementById("sessionMessage");
-
-const generatedCodeBox =
-    document.getElementById("generatedCodeBox");
-
-const generatedAttendanceCode =
-    document.getElementById("generatedAttendanceCode");
-
-const copyAttendanceCodeBtn =
-    document.getElementById("copyAttendanceCodeBtn");
-
-const refreshSessionsBtn =
-    document.getElementById("refreshSessionsBtn");
-
-const sessionsMessage =
-    document.getElementById("sessionsMessage");
-
-const activeSessionsList =
-    document.getElementById("activeSessionsList");
-
-const testingModeStatus =
-    document.getElementById("testingModeStatus");
-
-const testingModeBtn =
-    document.getElementById("testingModeBtn");
-
-const testingModeMessage =
-    document.getElementById("testingModeMessage");
-
-const totalAttendance =
-    document.getElementById("totalAttendance");
-
-const todayAttendance =
-    document.getElementById("todayAttendance");
-
-const uniqueStudents =
-    document.getElementById("uniqueStudents");
-
-const attendanceSearch =
-    document.getElementById("attendanceSearch");
-
-const refreshAttendanceBtn =
-    document.getElementById("refreshAttendanceBtn");
-
-const attendanceTableBody =
-    document.getElementById("attendanceTableBody");
-
-
-// ==========================================
-// VARIABLES
+// ELEMENT HELPER
 // ==========================================
 
-let currentAdmin = null;
-let currentAdminProfile = null;
-
-let courses = [];
-let attendanceRecords = [];
-let attendanceSessions = [];
-
-let testingMode = false;
-
+const $ = (id) => document.getElementById(id);
 
 // ==========================================
-// AUTH PROTECTION
+// COURSE ELEMENTS
 // ==========================================
 
-onAuthStateChanged(auth, async (user) => {
-
-    if (!user) {
-
-        window.location.replace("admin-auth.html");
-
-        return;
-    }
-
-
-    try {
-
-        const adminRef =
-            doc(
-                db,
-                "users",
-                user.uid
-            );
-
-
-        const adminSnap =
-            await getDoc(adminRef);
-
-
-        if (!adminSnap.exists()) {
-
-            await signOut(auth);
-
-            window.location.replace(
-                "admin-auth.html"
-            );
-
-            return;
-        }
-
-
-        const adminData =
-            adminSnap.data();
-
-
-        if (adminData.role !== "admin") {
-
-            await signOut(auth);
-
-            window.location.replace(
-                "admin-auth.html"
-            );
-
-            return;
-        }
-
-
-        currentAdmin =
-            user;
-
-        currentAdminProfile =
-            adminData;
-
-
-        await loadTestingMode();
-
-        await loadCourses();
-
-        await loadActiveSessions();
-
-        await loadAttendance();
-
-
-    } catch (error) {
-
-        console.error(
-            "Admin authentication error:",
-            error
-        );
-
-    }
-
-});
-
+const courseForm = $("courseForm");
+const courseCode = $("courseCode");
+const courseTitle = $("courseTitle");
+const classLocation = $("classLocation");
+const getLocationBtn = $("getLocationBtn");
+const locationMessage = $("locationMessage");
+const latitude = $("latitude");
+const longitude = $("longitude");
+const radius = $("radius");
 
 // ==========================================
-// LOGOUT
+// COURSE MANAGEMENT
 // ==========================================
 
-const logoutButtons =
-    document.querySelectorAll(
-        "#adminLogoutBtn, .admin-logout-btn"
-    );
-
-
-logoutButtons.forEach(
-    (button) => {
-
-        button.addEventListener(
-            "click",
-            async () => {
-
-                try {
-
-                    await signOut(auth);
-
-                    window.location.replace(
-                        "admin-auth.html"
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Logout error:",
-                        error
-                    );
-
-                }
-
-            }
-        );
-
-    }
-);
-
+const refreshCoursesBtn = $("refreshCoursesBtn");
+const coursesMessage = $("coursesMessage");
+const courseManagementList = $("courseManagementList");
 
 // ==========================================
-// LOCAL DATE
+// SESSION ELEMENTS
 // ==========================================
 
-function getLocalDate() {
+const sessionForm = $("sessionForm");
+const sessionCourse = $("sessionCourse");
+const sessionDate = $("sessionDate");
+const sessionStartTime = $("sessionStartTime");
+const sessionEndTime = $("sessionEndTime");
+const sessionMessage = $("sessionMessage");
 
-    const now =
-        new Date();
+const generatedCodeBox = $("generatedCodeBox");
+const generatedAttendanceCode = $("generatedAttendanceCode");
+const copyAttendanceCodeBtn = $("copyAttendanceCodeBtn");
 
-
-    const year =
-        now.getFullYear();
-
-
-    const month =
-        String(
-            now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const day =
-        String(
-            now.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    return `${year}-${month}-${day}`;
-}
-
-
-// ==========================================
-// GENERATE ATTENDANCE CODE
-// ==========================================
-
-function generateAttendanceCode() {
-
-    return String(
-        Math.floor(
-            100000 +
-            Math.random() * 900000
-        )
-    );
-
-}
-
+const refreshSessionsBtn = $("refreshSessionsBtn");
+const sessionsMessage = $("sessionsMessage");
+const activeSessionsList = $("activeSessionsList");
 
 // ==========================================
 // TESTING MODE
 // ==========================================
 
-async function loadTestingMode() {
-
-    try {
-
-        const settingsRef =
-            doc(
-                db,
-                "settings",
-                "system"
-            );
-
-
-        const settingsSnap =
-            await getDoc(
-                settingsRef
-            );
-
-
-        if (settingsSnap.exists()) {
-
-            testingMode =
-                settingsSnap.data()
-                    .testingMode === true;
-
-        } else {
-
-            testingMode =
-                false;
-
-        }
-
-
-        updateTestingModeUI();
-
-
-    } catch (error) {
-
-        console.error(
-            "Testing mode error:",
-            error
-        );
-
-
-        testingMode =
-            false;
-
-
-        updateTestingModeUI();
-
-    }
-
-}
-
+const testingModeStatus = $("testingModeStatus");
+const testingModeBtn = $("testingModeBtn");
+const testingModeMessage = $("testingModeMessage");
 
 // ==========================================
-// TESTING MODE UI
+// ATTENDANCE
+// ==========================================
+
+const totalAttendance = $("totalAttendance");
+const todayAttendance = $("todayAttendance");
+const uniqueStudents = $("uniqueStudents");
+const attendanceSearch = $("attendanceSearch");
+const refreshAttendanceBtn = $("refreshAttendanceBtn");
+const attendanceTableBody = $("attendanceTableBody");
+
+// ==========================================
+// GLOBAL DATA
+// ==========================================
+
+let currentAdmin = null;
+let courses = [];
+let attendanceRecords = [];
+let testingMode = false;
+let editingCourseId = null;
+
+// ==========================================
+// SAFE HTML
+// ==========================================
+
+function escapeHTML(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// ==========================================
+// MESSAGE HELPER
+// ==========================================
+
+function showMessage(element, message, type = "info") {
+    if (!element) return;
+
+    element.textContent = message;
+    element.style.display = "block";
+
+    if (type === "success") {
+        element.style.color = "green";
+    } else if (type === "error") {
+        element.style.color = "red";
+    } else {
+        element.style.color = "";
+    }
+}
+
+// ==========================================
+// TODAY
+// ==========================================
+
+function getToday() {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+// ==========================================
+// TIME CHECK
+// ==========================================
+
+function isSessionExpired(session) {
+    const today = getToday();
+
+    if (session.date < today) return true;
+
+    if (session.date > today) return false;
+
+    if (!session.endTime) return false;
+
+    const now = new Date();
+
+    const currentTime =
+        `${String(now.getHours()).padStart(2, "0")}:` +
+        `${String(now.getMinutes()).padStart(2, "0")}`;
+
+    return currentTime > session.endTime;
+}
+
+// ==========================================
+// GENERATE CODE
+// ==========================================
+
+function generateAttendanceCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ==========================================
+// LOAD TESTING MODE
+// ==========================================
+
+async function loadTestingMode() {
+    try {
+        const systemRef = doc(db, "settings", "system");
+        const systemSnap = await getDoc(systemRef);
+
+        if (systemSnap.exists()) {
+            testingMode = systemSnap.data().testingMode === true;
+        } else {
+            testingMode = false;
+        }
+
+        updateTestingModeUI();
+
+    } catch (error) {
+        console.error("Testing mode error:", error);
+
+        testingMode = false;
+        updateTestingModeUI();
+    }
+}
+
+// ==========================================
+// UPDATE TESTING MODE UI
 // ==========================================
 
 function updateTestingModeUI() {
-
     if (testingModeStatus) {
-
         testingModeStatus.textContent =
-            testingMode
-                ? "🧪 Testing Mode is active"
-                : "🔒 Testing Mode is OFF";
-
+            testingMode ? "ON" : "OFF";
     }
 
-
     if (testingModeBtn) {
-
         testingModeBtn.textContent =
             testingMode
                 ? "Turn Testing Mode OFF"
                 : "Turn Testing Mode ON";
-
     }
-
-
-    if (testingModeMessage) {
-
-        testingModeMessage.textContent =
-            testingMode
-
-                ? "🧪 Testing Mode is active. GPS distance restrictions can be bypassed for test attendance."
-
-                : "Normal attendance mode is active. Students must be within the configured GPS radius.";
-
-    }
-
 }
-
 
 // ==========================================
 // TOGGLE TESTING MODE
 // ==========================================
 
-if (testingModeBtn) {
+async function toggleTestingMode() {
+    try {
+        testingMode = !testingMode;
 
-    testingModeBtn.addEventListener(
-        "click",
-        async () => {
+        await setDoc(
+            doc(db, "settings", "system"),
+            {
+                testingMode: testingMode,
+                updatedAt: serverTimestamp(),
+                updatedBy: currentAdmin.uid
+            },
+            { merge: true }
+        );
 
-            if (!currentAdmin) {
-                return;
-            }
+        updateTestingModeUI();
 
+        showMessage(
+            testingModeMessage,
+            testingMode
+                ? "Testing Mode is now ON."
+                : "Testing Mode is now OFF.",
+            "success"
+        );
 
-            try {
+    } catch (error) {
+        console.error("Toggle testing mode error:", error);
 
-                const newMode =
-                    !testingMode;
+        testingMode = !testingMode;
+        updateTestingModeUI();
 
-
-                await setDoc(
-                    doc(
-                        db,
-                        "settings",
-                        "system"
-                    ),
-                    {
-
-                        testingMode:
-                            newMode,
-
-                        updatedBy:
-                            currentAdmin.uid,
-
-                        updatedAt:
-                            serverTimestamp()
-
-                    },
-                    {
-                        merge: true
-                    }
-                );
-
-
-                testingMode =
-                    newMode;
-
-
-                updateTestingModeUI();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Testing mode update failed:",
-                    error
-                );
-
-
-                if (testingModeMessage) {
-
-                    testingModeMessage.textContent =
-                        "❌ Unable to update Testing Mode.";
-
-                }
-
-            }
-
-        }
-    );
-
+        showMessage(
+            testingModeMessage,
+            "Unable to change Testing Mode.",
+            "error"
+        );
+    }
 }
 
-
 // ==========================================
-// GET ADMIN GPS LOCATION
+// GET GPS LOCATION
 // ==========================================
 
-if (getLocationBtn) {
+function getLocation() {
+    if (!navigator.geolocation) {
+        showMessage(
+            locationMessage,
+            "Geolocation is not supported by this browser.",
+            "error"
+        );
+        return;
+    }
 
-    getLocationBtn.addEventListener(
-        "click",
-        () => {
+    showMessage(
+        locationMessage,
+        "Getting your current location..."
+    );
 
-            if (!navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
 
-                if (locationMessage) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
 
-                    locationMessage.textContent =
-                        "❌ Geolocation is not supported by this browser.";
-
-                }
-
-                return;
+            if (latitude) {
+                latitude.value = lat.toFixed(8);
             }
 
+            if (longitude) {
+                longitude.value = lng.toFixed(8);
+            }
 
-            getLocationBtn.disabled =
-                true;
-
-
-            getLocationBtn.textContent =
-                "Getting Location...";
-
-
-            navigator.geolocation.getCurrentPosition(
-
-                (position) => {
-
-                    const lat =
-                        position.coords.latitude;
-
-                    const lng =
-                        position.coords.longitude;
-
-
-                    if (latitudeInput) {
-
-                        latitudeInput.value =
-                            lat;
-
-                    }
-
-
-                    if (longitudeInput) {
-
-                        longitudeInput.value =
-                            lng;
-
-                    }
-
-
-                    if (classLocation) {
-
-                        classLocation.value =
-                            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-                    }
-
-
-                    if (locationMessage) {
-
-                        locationMessage.textContent =
-                            "✅ Class location captured successfully.";
-
-                    }
-
-
-                    getLocationBtn.disabled =
-                        false;
-
-
-                    getLocationBtn.textContent =
-                        "📍 Get My Current Location";
-
-                },
-
-                (error) => {
-
-                    console.error(
-                        "Location error:",
-                        error
-                    );
-
-
-                    if (locationMessage) {
-
-                        locationMessage.textContent =
-                            "❌ Unable to get your location. Please allow location access.";
-
-                    }
-
-
-                    getLocationBtn.disabled =
-                        false;
-
-
-                    getLocationBtn.textContent =
-                        "📍 Get My Current Location";
-
-                },
-
-                {
-
-                    enableHighAccuracy:
-                        true,
-
-                    timeout:
-                        15000,
-
-                    maximumAge:
-                        0
-
-                }
-
+            showMessage(
+                locationMessage,
+                "Location captured successfully.",
+                "success"
             );
+        },
 
+        (error) => {
+            console.error("Location error:", error);
+
+            let message =
+                "Unable to get your location.";
+
+            if (error.code === 1) {
+                message =
+                    "Location permission was denied.";
+            }
+
+            if (error.code === 2) {
+                message =
+                    "Your location could not be determined.";
+            }
+
+            if (error.code === 3) {
+                message =
+                    "Location request timed out.";
+            }
+
+            showMessage(
+                locationMessage,
+                message,
+                "error"
+            );
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
         }
     );
-
 }
-
-
-// ==========================================
-// CREATE COURSE
-// ==========================================
-
-if (courseForm) {
-
-    courseForm.addEventListener(
-        "submit",
-        async (event) => {
-
-            event.preventDefault();
-
-
-            if (!currentAdmin) {
-                return;
-            }
-
-
-            const code =
-                courseCode?.value
-                    .trim()
-                    .toUpperCase();
-
-
-            const title =
-                courseTitle?.value
-                    .trim();
-
-
-            const location =
-                classLocation?.value
-                    .trim();
-
-
-            const latitude =
-                Number(
-                    latitudeInput?.value
-                );
-
-
-            const longitude =
-                Number(
-                    longitudeInput?.value
-                );
-
-
-            const radius =
-                Number(
-                    radiusInput?.value
-                );
-
-
-            if (
-                !code ||
-                !title ||
-                !location ||
-                !Number.isFinite(latitude) ||
-                !Number.isFinite(longitude) ||
-                !Number.isFinite(radius)
-            ) {
-
-                if (locationMessage) {
-
-                    locationMessage.textContent =
-                        "❌ Please complete all course and location fields.";
-
-                }
-
-                return;
-            }
-
-
-            try {
-
-                // Prevent duplicate course codes
-
-                const existingQuery =
-                    query(
-                        collection(
-                            db,
-                            "courses"
-                        ),
-                        where(
-                            "code",
-                            "==",
-                            code
-                        )
-                    );
-
-
-                const existingSnapshot =
-                    await getDocs(
-                        existingQuery
-                    );
-
-
-                if (!existingSnapshot.empty) {
-
-                    if (locationMessage) {
-
-                        locationMessage.textContent =
-                            "⚠️ This course code already exists.";
-
-                    }
-
-                    return;
-                }
-
-
-                await addDoc(
-                    collection(
-                        db,
-                        "courses"
-                    ),
-                    {
-
-                        code:
-                            code,
-
-                        title:
-                            title,
-
-                        location:
-                            location,
-
-                        latitude:
-                            latitude,
-
-                        longitude:
-                            longitude,
-
-                        radius:
-                            radius,
-
-                        createdAt:
-                            serverTimestamp(),
-
-                        createdBy:
-                            currentAdmin.uid
-
-                    }
-                );
-
-
-                if (locationMessage) {
-
-                    locationMessage.textContent =
-                        "✅ Course created successfully.";
-
-                }
-
-
-                courseForm.reset();
-
-
-                await loadCourses();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Course creation error:",
-                    error
-                );
-
-
-                if (locationMessage) {
-
-                    locationMessage.textContent =
-                        "❌ Unable to create course.";
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
 
 // ==========================================
 // LOAD COURSES
 // ==========================================
 
 async function loadCourses() {
-
     try {
-
         const snapshot =
-            await getDocs(
-                collection(
-                    db,
-                    "courses"
-                )
-            );
-
+            await getDocs(collection(db, "courses"));
 
         courses = [];
 
+        snapshot.forEach((courseDoc) => {
+            courses.push({
+                id: courseDoc.id,
+                ...courseDoc.data()
+            });
+        });
 
-        snapshot.forEach(
-            (docSnap) => {
-
-                courses.push({
-
-                    id:
-                        docSnap.id,
-
-                    ...docSnap.data()
-
-                });
-
-            }
+        courses.sort((a, b) =>
+            String(a.code || "")
+                .localeCompare(String(b.code || ""))
         );
 
-
-        courses.sort(
-            (a, b) =>
-                String(
-                    a.code || ""
-                ).localeCompare(
-                    String(
-                        b.code || ""
-                    )
-                )
-        );
-
-
-        populateCourseDropdown();
-
+        populateSessionCourses();
+        renderCourseManagement();
 
     } catch (error) {
+        console.error("Load courses error:", error);
 
-        console.error(
-            "Loading courses failed:",
-            error
+        showMessage(
+            coursesMessage,
+            "Unable to load courses.",
+            "error"
         );
-
     }
-
 }
 
+// ==========================================
+// POPULATE SESSION COURSES
+// ==========================================
+
+function populateSessionCourses() {
+    if (!sessionCourse) return;
+
+    sessionCourse.innerHTML =
+        `<option value="">Select a course</option>`;
+
+    courses.forEach((course) => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = course.id;
+
+        option.textContent =
+            `${course.code || ""} - ${course.title || ""}`;
+
+        sessionCourse.appendChild(option);
+    });
+}
 
 // ==========================================
-// COURSE DROPDOWN
+// RENDER COURSE MANAGEMENT
 // ==========================================
 
-function populateCourseDropdown() {
+function renderCourseManagement() {
+    if (!courseManagementList) return;
 
-    if (!sessionCourse) {
+    if (courses.length === 0) {
+        courseManagementList.innerHTML =
+            `<p>No courses have been added yet.</p>`;
         return;
     }
 
+    courseManagementList.innerHTML =
+        courses.map((course) => {
 
-    sessionCourse.innerHTML =
-        `<option value="">
-            Select Course
-        </option>`;
+            const code =
+                escapeHTML(course.code || "");
 
+            const title =
+                escapeHTML(course.title || "");
 
-    courses.forEach(
-        (course) => {
+            const location =
+                escapeHTML(course.location || "Not specified");
 
-            const option =
-                document.createElement(
-                    "option"
-                );
+            const lat =
+                course.latitude ?? "";
 
+            const lng =
+                course.longitude ?? "";
 
-            option.value =
-                course.id;
+            const courseRadius =
+                course.radius ?? 100;
 
+            return `
+                <div class="course-management-card"
+                     style="
+                        border:1px solid #ddd;
+                        border-radius:10px;
+                        padding:15px;
+                        margin-bottom:12px;
+                     ">
 
-            option.textContent =
-                `${course.code || "---"} - ${course.title || "Untitled Course"}`;
+                    <h3>${code}</h3>
 
+                    <p>
+                        <strong>${title}</strong>
+                    </p>
 
-            sessionCourse.appendChild(
-                option
-            );
+                    <p>
+                        Location: ${location}
+                    </p>
 
-        }
-    );
+                    <p>
+                        Latitude: ${escapeHTML(lat)}
+                        <br>
+                        Longitude: ${escapeHTML(lng)}
+                        <br>
+                        Radius: ${escapeHTML(courseRadius)}m
+                    </p>
 
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+                        <button
+                            type="button"
+                            class="edit-course-btn"
+                            data-id="${course.id}">
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="delete-course-btn"
+                            data-id="${course.id}">
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        }).join("");
+
+    document
+        .querySelectorAll(".edit-course-btn")
+        .forEach((button) => {
+
+            button.addEventListener("click", () => {
+                editCourse(button.dataset.id);
+            });
+
+        });
+
+    document
+        .querySelectorAll(".delete-course-btn")
+        .forEach((button) => {
+
+            button.addEventListener("click", () => {
+                deleteCourse(button.dataset.id);
+            });
+
+        });
 }
 
+// ==========================================
+// ADD / UPDATE COURSE
+// ==========================================
+
+async function saveCourse(event) {
+    event.preventDefault();
+
+    if (!currentAdmin) return;
+
+    const code =
+        courseCode?.value.trim().toUpperCase();
+
+    const title =
+        courseTitle?.value.trim();
+
+    const location =
+        classLocation?.value.trim();
+
+    const lat =
+        Number(latitude?.value);
+
+    const lng =
+        Number(longitude?.value);
+
+    const courseRadius =
+        Number(radius?.value);
+
+    if (!code || !title) {
+        showMessage(
+            locationMessage,
+            "Enter the course code and course title.",
+            "error"
+        );
+        return;
+    }
+
+    if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng)
+    ) {
+        showMessage(
+            locationMessage,
+            "Please capture or enter a valid location.",
+            "error"
+        );
+        return;
+    }
+
+    if (
+        !Number.isFinite(courseRadius) ||
+        courseRadius <= 0
+    ) {
+        showMessage(
+            locationMessage,
+            "Enter a valid attendance radius.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+
+        if (!editingCourseId) {
+
+            const existing =
+                courses.find(
+                    (course) =>
+                        String(course.code || "")
+                            .toUpperCase() === code
+                );
+
+            if (existing) {
+                showMessage(
+                    locationMessage,
+                    "A course with this code already exists.",
+                    "error"
+                );
+                return;
+            }
+
+            await addDoc(
+                collection(db, "courses"),
+                {
+                    code,
+                    title,
+                    location,
+                    latitude: lat,
+                    longitude: lng,
+                    radius: courseRadius,
+                    createdBy: currentAdmin.uid,
+                    createdAt: serverTimestamp()
+                }
+            );
+
+            showMessage(
+                locationMessage,
+                "Course added successfully.",
+                "success"
+            );
+
+        } else {
+
+            await updateDoc(
+                doc(db, "courses", editingCourseId),
+                {
+                    code,
+                    title,
+                    location,
+                    latitude: lat,
+                    longitude: lng,
+                    radius: courseRadius,
+                    updatedBy: currentAdmin.uid,
+                    updatedAt: serverTimestamp()
+                }
+            );
+
+            showMessage(
+                locationMessage,
+                "Course updated successfully.",
+                "success"
+            );
+
+            editingCourseId = null;
+        }
+
+        courseForm?.reset();
+
+        await loadCourses();
+
+    } catch (error) {
+
+        console.error("Save course error:", error);
+
+        showMessage(
+            locationMessage,
+            "Unable to save course. Check the browser console.",
+            "error"
+        );
+    }
+}
+
+// ==========================================
+// EDIT COURSE
+// ==========================================
+
+function editCourse(courseId) {
+
+    const course =
+        courses.find(
+            (item) => item.id === courseId
+        );
+
+    if (!course) return;
+
+    editingCourseId = courseId;
+
+    if (courseCode) {
+        courseCode.value =
+            course.code || "";
+    }
+
+    if (courseTitle) {
+        courseTitle.value =
+            course.title || "";
+    }
+
+    if (classLocation) {
+        classLocation.value =
+            course.location || "";
+    }
+
+    if (latitude) {
+        latitude.value =
+            course.latitude ?? "";
+    }
+
+    if (longitude) {
+        longitude.value =
+            course.longitude ?? "";
+    }
+
+    if (radius) {
+        radius.value =
+            course.radius ?? 100;
+    }
+
+    showMessage(
+        locationMessage,
+        "Editing course. Update the details and submit.",
+        "info"
+    );
+
+    courseForm?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+// ==========================================
+// DELETE COURSE
+// ==========================================
+
+async function deleteCourse(courseId) {
+
+    const course =
+        courses.find(
+            (item) => item.id === courseId
+        );
+
+    if (!course) return;
+
+    const confirmed =
+        confirm(
+            `Delete ${course.code} - ${course.title}?`
+        );
+
+    if (!confirmed) return;
+
+    try {
+
+        await deleteDoc(
+            doc(db, "courses", courseId)
+        );
+
+        showMessage(
+            coursesMessage,
+            "Course deleted successfully.",
+            "success"
+        );
+
+        await loadCourses();
+
+    } catch (error) {
+
+        console.error("Delete course error:", error);
+
+        showMessage(
+            coursesMessage,
+            "Unable to delete course.",
+            "error"
+        );
+    }
+}
 
 // ==========================================
 // CREATE ATTENDANCE SESSION
 // ==========================================
 
-if (sessionForm) {
+async function createSession(event) {
 
-    sessionForm.addEventListener(
-        "submit",
-        async (event) => {
+    event.preventDefault();
 
-            event.preventDefault();
+    const courseId =
+        sessionCourse?.value;
 
+    const date =
+        sessionDate?.value;
 
-            if (!currentAdmin) {
-                return;
-            }
+    const startTime =
+        sessionStartTime?.value;
 
+    const endTime =
+        sessionEndTime?.value;
 
-            const selectedCourseId =
-                sessionCourse?.value;
-
-
-            const date =
-                sessionDate?.value;
-
-
-            const startTime =
-                sessionStartTime?.value;
-
-
-            const endTime =
-                sessionEndTime?.value;
-
-
-            if (!selectedCourseId) {
-
-                showSessionMessage(
-                    "❌ Please select a course."
-                );
-
-                return;
-            }
-
-
-            if (
-                !date ||
-                !startTime ||
-                !endTime
-            ) {
-
-                showSessionMessage(
-                    "❌ Please complete the date and time."
-                );
-
-                return;
-            }
-
-
-            if (endTime <= startTime) {
-
-                showSessionMessage(
-                    "❌ End time must be later than start time."
-                );
-
-                return;
-            }
-
-
-            const selectedCourse =
-                courses.find(
-                    (course) =>
-                        course.id ===
-                        selectedCourseId
-                );
-
-
-            if (!selectedCourse) {
-
-                showSessionMessage(
-                    "❌ Selected course could not be found."
-                );
-
-                return;
-            }
-
-
-            try {
-
-                // ======================================
-                // CHECK DUPLICATE ACTIVE SESSION
-                // ======================================
-
-                const existingQuery =
-                    query(
-                        collection(
-                            db,
-                            "attendanceSessions"
-                        ),
-                        where(
-                            "courseId",
-                            "==",
-                            selectedCourse.id
-                        ),
-                        where(
-                            "date",
-                            "==",
-                            date
-                        ),
-                        where(
-                            "active",
-                            "==",
-                            true
-                        )
-                    );
-
-
-                const existingSnapshot =
-                    await getDocs(
-                        existingQuery
-                    );
-
-
-                let duplicate =
-                    false;
-
-
-                existingSnapshot.forEach(
-                    (docSnap) => {
-
-                        const existing =
-                            docSnap.data();
-
-
-                        if (
-                            existing.startTime ===
-                                startTime ||
-
-                            (
-                                startTime <
-                                    existing.endTime &&
-
-                                endTime >
-                                    existing.startTime
-                            )
-                        ) {
-
-                            duplicate =
-                                true;
-
-                        }
-
-                    }
-                );
-
-
-                if (duplicate) {
-
-                    showSessionMessage(
-                        "⚠️ An active session already exists for this course during this time."
-                    );
-
-                    return;
-                }
-
-
-                const attendanceCode =
-                    generateAttendanceCode();
-
-
-                await addDoc(
-                    collection(
-                        db,
-                        "attendanceSessions"
-                    ),
-                    {
-
-                        courseId:
-                            selectedCourse.id,
-
-                        courseCode:
-                            selectedCourse.code || "",
-
-                        courseTitle:
-                            selectedCourse.title || "",
-
-                        date:
-                            date,
-
-                        startTime:
-                            startTime,
-
-                        endTime:
-                            endTime,
-
-                        latitude:
-                            Number(
-                                selectedCourse.latitude
-                            ),
-
-                        longitude:
-                            Number(
-                                selectedCourse.longitude
-                            ),
-
-                        radius:
-                            Number(
-                                selectedCourse.radius
-                            ),
-
-                        code:
-                            attendanceCode,
-
-                        createdBy:
-                            currentAdmin.uid,
-
-                        createdAt:
-                            serverTimestamp(),
-
-                        active:
-                            true,
-
-                        testingMode:
-                            testingMode === true
-
-                    }
-                );
-
-
-                if (generatedCodeBox) {
-
-                    generatedCodeBox.style.display =
-                        "block";
-
-                }
-
-
-                if (generatedAttendanceCode) {
-
-                    generatedAttendanceCode.textContent =
-                        attendanceCode;
-
-                }
-
-
-                showSessionMessage(
-
-                    testingMode
-
-                        ? "🧪 Test attendance session created successfully."
-
-                        : "✅ Attendance session created successfully."
-
-                );
-
-
-                sessionForm.reset();
-
-
-                if (sessionDate) {
-
-                    sessionDate.value =
-                        getLocalDate();
-
-                }
-
-
-                await loadActiveSessions();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Session creation error:",
-                    error
-                );
-
-
-                showSessionMessage(
-                    "❌ Unable to create attendance session."
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// SESSION MESSAGE
-// ==========================================
-
-function showSessionMessage(
-    message
-) {
-
-    if (sessionMessage) {
-
-        sessionMessage.textContent =
-            message;
-
+    if (!courseId) {
+        showMessage(
+            sessionMessage,
+            "Select a course.",
+            "error"
+        );
+        return;
     }
 
-}
+    if (!date || !startTime || !endTime) {
+        showMessage(
+            sessionMessage,
+            "Enter the date, start time and end time.",
+            "error"
+        );
+        return;
+    }
 
+    if (endTime <= startTime) {
+        showMessage(
+            sessionMessage,
+            "End time must be later than start time.",
+            "error"
+        );
+        return;
+    }
+
+    const course =
+        courses.find(
+            (item) => item.id === courseId
+        );
+
+    if (!course) {
+        showMessage(
+            sessionMessage,
+            "Selected course could not be found.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+
+        const sessionCode =
+            generateAttendanceCode();
+
+        const sessionData = {
+
+            courseId,
+
+            courseCode:
+                course.code || "",
+
+            courseTitle:
+                course.title || "",
+
+            date,
+
+            startTime,
+
+            endTime,
+
+            latitude:
+                Number(course.latitude),
+
+            longitude:
+                Number(course.longitude),
+
+            radius:
+                Number(course.radius || 100),
+
+            code:
+                sessionCode,
+
+            active: true,
+
+            testingMode:
+                testingMode === true,
+
+            createdBy:
+                currentAdmin.uid,
+
+            createdAt:
+                serverTimestamp()
+        };
+
+        await addDoc(
+            collection(db, "attendanceSessions"),
+            sessionData
+        );
+
+        if (generatedAttendanceCode) {
+            generatedAttendanceCode.textContent =
+                sessionCode;
+        }
+
+        if (generatedCodeBox) {
+            generatedCodeBox.style.display =
+                "block";
+        }
+
+        showMessage(
+            sessionMessage,
+            "Attendance session created successfully.",
+            "success"
+        );
+
+        sessionForm?.reset();
+
+        await loadActiveSessions();
+
+    } catch (error) {
+
+        console.error(
+            "Create session error:",
+            error
+        );
+
+        showMessage(
+            sessionMessage,
+            "Unable to create attendance session.",
+            "error"
+        );
+    }
+}
 
 // ==========================================
 // LOAD ACTIVE SESSIONS
@@ -1186,67 +896,25 @@ function showSessionMessage(
 
 async function loadActiveSessions() {
 
-    if (!activeSessionsList) {
-        return;
-    }
-
-
     try {
 
         const snapshot =
             await getDocs(
-                collection(
-                    db,
-                    "attendanceSessions"
-                )
+                collection(db, "attendanceSessions")
             );
 
+        const sessions = [];
 
-        attendanceSessions = [];
+        for (const sessionDoc of snapshot.docs) {
 
-
-        snapshot.forEach(
-            (docSnap) => {
-
-                const data =
-                    docSnap.data();
-
-
-                if (data.active === true) {
-
-                    attendanceSessions.push({
-
-                        id:
-                            docSnap.id,
-
-                        ...data
-
-                    });
-
-                }
-
-            }
-        );
-
-
-        // ======================================
-        // AUTO-DEACTIVATE EXPIRED SESSIONS
-        // ======================================
-
-        const now =
-            new Date();
-
-
-        for (
-            const session
-            of attendanceSessions
-        ) {
+            const session = {
+                id: sessionDoc.id,
+                ...sessionDoc.data()
+            };
 
             if (
-                isSessionExpired(
-                    session,
-                    now
-                )
+                session.active === true &&
+                isSessionExpired(session)
             ) {
 
                 try {
@@ -1258,327 +926,158 @@ async function loadActiveSessions() {
                             session.id
                         ),
                         {
-
-                            active:
-                                false,
-
+                            active: false,
+                            autoClosed: true,
                             closedAt:
                                 serverTimestamp(),
-
                             closedBy:
-                                currentAdmin?.uid || null,
-
-                            autoClosed:
-                                true
-
+                                currentAdmin.uid
                         }
                     );
 
-
-                    session.active =
-                        false;
-
-
-                } catch (error) {
+                } catch (closeError) {
 
                     console.error(
-                        "Auto-close failed:",
-                        error
+                        "Auto close error:",
+                        closeError
                     );
-
                 }
 
+                continue;
             }
 
+            if (session.active === true) {
+                sessions.push(session);
+            }
         }
 
+        sessions.sort((a, b) => {
 
-        attendanceSessions =
-            attendanceSessions.filter(
-                (session) =>
-                    session.active === true
-            );
+            const aTime =
+                `${a.date || ""} ${a.startTime || ""}`;
 
+            const bTime =
+                `${b.date || ""} ${b.startTime || ""}`;
 
-        attendanceSessions.sort(
-            (a, b) => {
+            return bTime.localeCompare(aTime);
+        });
 
-                const first =
-                    `${a.date || ""} ${a.startTime || ""}`;
-
-                const second =
-                    `${b.date || ""} ${b.startTime || ""}`;
-
-                return second.localeCompare(
-                    first
-                );
-
-            }
-        );
-
-
-        renderActiveSessions(
-            attendanceSessions
-        );
-
+        renderActiveSessions(sessions);
 
     } catch (error) {
 
         console.error(
-            "Loading active sessions failed:",
+            "Load active sessions error:",
             error
         );
 
-
-        if (sessionsMessage) {
-
-            sessionsMessage.textContent =
-                "❌ Unable to load active sessions.";
-
-        }
-
-    }
-
-}
-
-
-// ==========================================
-// CHECK SESSION EXPIRY
-// ==========================================
-
-function isSessionExpired(
-    session,
-    now = new Date()
-) {
-
-    if (!session.date || !session.endTime) {
-
-        return false;
-
-    }
-
-
-    const end =
-        new Date(
-            `${session.date}T${session.endTime}:00`
+        showMessage(
+            sessionsMessage,
+            "Unable to load attendance sessions.",
+            "error"
         );
-
-
-    return now >= end;
-
+    }
 }
-
 
 // ==========================================
 // RENDER ACTIVE SESSIONS
 // ==========================================
 
-function renderActiveSessions(
-    sessions
-) {
+function renderActiveSessions(sessions) {
 
-    if (!activeSessionsList) {
-        return;
-    }
+    if (!activeSessionsList) return;
 
-
-    if (!sessions.length) {
+    if (sessions.length === 0) {
 
         activeSessionsList.innerHTML =
-            `
-            <div class="empty-state">
-
-                <p>
-                    No active attendance sessions.
-                </p>
-
-            </div>
-            `;
+            `<p>No active attendance sessions.</p>`;
 
         return;
     }
 
-
     activeSessionsList.innerHTML =
-        "";
+        sessions.map((session) => {
 
+            return `
+                <div
+                    style="
+                        border:1px solid #ddd;
+                        border-radius:10px;
+                        padding:15px;
+                        margin-bottom:12px;
+                    "
+                >
 
-    sessions.forEach(
-        (session) => {
+                    <h3>
+                        ${escapeHTML(session.courseCode)}
+                        -
+                        ${escapeHTML(session.courseTitle)}
+                    </h3>
 
-            const card =
-                document.createElement(
-                    "div"
-                );
+                    <p>
+                        Date:
+                        ${escapeHTML(session.date)}
+                    </p>
 
+                    <p>
+                        Time:
+                        ${escapeHTML(session.startTime)}
+                        -
+                        ${escapeHTML(session.endTime)}
+                    </p>
 
-            card.className =
-                "session-card";
+                    <p>
+                        Attendance Code:
+                        <strong>
+                            ${escapeHTML(session.code)}
+                        </strong>
+                    </p>
 
+                    <p>
+                        ${
+                            session.testingMode
+                                ? "Testing Mode"
+                                : "Normal Mode"
+                        }
+                    </p>
 
-            const modeText =
-                session.testingMode === true
-
-                    ? "🧪 Testing Mode"
-
-                    : "📍 Normal Mode";
-
-
-            const radius =
-                Number.isFinite(
-                    Number(
-                        session.radius
-                    )
-                )
-
-                    ? `${session.radius}m`
-
-                    : "Not set";
-
-
-            card.innerHTML = `
-
-                <div class="session-card-content">
-
-                    <div class="session-card-main">
-
-                        <span class="session-mode">
-                            ${modeText}
-                        </span>
-
-                        <h3>
-                            ${escapeHTML(
-                                session.courseCode || "---"
-                            )}
-                        </h3>
-
-                        <p>
-                            ${escapeHTML(
-                                session.courseTitle ||
-                                "Untitled Course"
-                            )}
-                        </p>
-
-                        <div class="session-details">
-
-                            <span>
-                                📅 ${escapeHTML(
-                                    session.date || "-"
-                                )}
-                            </span>
-
-                            <span>
-                                🕐 ${escapeHTML(
-                                    session.startTime || "--:--"
-                                )}
-                                -
-                                ${escapeHTML(
-                                    session.endTime || "--:--"
-                                )}
-                            </span>
-
-                            <span>
-                                📍 Radius:
-                                <strong>
-                                    ${radius}
-                                </strong>
-                            </span>
-
-                            <span>
-                                🔢 Code:
-                                <strong>
-                                    ${escapeHTML(
-                                        session.code ||
-                                        "------"
-                                    )}
-                                </strong>
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="session-card-actions">
-
-                        <span class="active-badge">
-                            ACTIVE
-                        </span>
-
-                        <button
-                            type="button"
-                            class="close-session-btn"
-                            data-id="${session.id}"
-                        >
-                            Close Session
-                        </button>
-
-                    </div>
+                    <button
+                        type="button"
+                        class="close-session-btn"
+                        data-id="${session.id}"
+                    >
+                        Close Session
+                    </button>
 
                 </div>
             `;
 
-
-            activeSessionsList.appendChild(
-                card
-            );
-
-        }
-    );
-
+        }).join("");
 
     document
-        .querySelectorAll(
-            ".close-session-btn"
-        )
-        .forEach(
-            (button) => {
+        .querySelectorAll(".close-session-btn")
+        .forEach((button) => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+            button.addEventListener(
+                "click",
+                () => closeSession(button.dataset.id)
+            );
 
-                        closeSession(
-                            button.dataset.id
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+        });
 }
-
 
 // ==========================================
 // CLOSE SESSION
 // ==========================================
 
-async function closeSession(
-    sessionId
-) {
+async function closeSession(sessionId) {
 
-    if (
-        !sessionId ||
-        !currentAdmin
-    ) {
-
-        return;
-
-    }
-
-
-    const confirmClose =
+    const confirmed =
         confirm(
             "Are you sure you want to close this attendance session?"
         );
 
-
-    if (!confirmClose) {
-        return;
-    }
-
+    if (!confirmed) return;
 
     try {
 
@@ -1589,53 +1088,68 @@ async function closeSession(
                 sessionId
             ),
             {
-
-                active:
-                    false,
-
-                closedAt:
-                    serverTimestamp(),
-
-                closedBy:
-                    currentAdmin.uid,
-
-                autoClosed:
-                    false
-
+                active: false,
+                closedAt: serverTimestamp(),
+                closedBy: currentAdmin.uid
             }
         );
 
-
-        if (sessionsMessage) {
-
-            sessionsMessage.textContent =
-                "✅ Attendance session closed.";
-
-        }
-
+        showMessage(
+            sessionsMessage,
+            "Attendance session closed.",
+            "success"
+        );
 
         await loadActiveSessions();
-
 
     } catch (error) {
 
         console.error(
-            "Closing session failed:",
+            "Close session error:",
             error
         );
 
-
-        if (sessionsMessage) {
-
-            sessionsMessage.textContent =
-                "❌ Unable to close attendance session.";
-
-        }
-
+        showMessage(
+            sessionsMessage,
+            "Unable to close the session.",
+            "error"
+        );
     }
-
 }
 
+// ==========================================
+// COPY ATTENDANCE CODE
+// ==========================================
+
+async function copyAttendanceCode() {
+
+    const code =
+        generatedAttendanceCode?.textContent?.trim();
+
+    if (!code) return;
+
+    try {
+
+        await navigator.clipboard.writeText(code);
+
+        showMessage(
+            sessionMessage,
+            "Attendance code copied.",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Copy code error:",
+            error
+        );
+
+        alert(
+            `Attendance Code: ${code}`
+        );
+    }
+}
 
 // ==========================================
 // LOAD ATTENDANCE
@@ -1643,106 +1157,177 @@ async function closeSession(
 
 async function loadAttendance() {
 
-    if (!attendanceTableBody) {
-        return;
-    }
-
-
     try {
 
         const snapshot =
             await getDocs(
-                collection(
-                    db,
-                    "attendance"
-                )
+                collection(db, "attendance")
             );
 
+        attendanceRecords = [];
 
-        attendanceRecords =
-            [];
+        snapshot.forEach((attendanceDoc) => {
 
+            attendanceRecords.push({
+                id: attendanceDoc.id,
+                ...attendanceDoc.data()
+            });
 
-        snapshot.forEach(
-            (docSnap) => {
+        });
 
-                attendanceRecords.push({
-
-                    id:
-                        docSnap.id,
-
-                    ...docSnap.data()
-
-                });
-
-            }
-        );
-
-
-        attendanceRecords.sort(
-            (a, b) => {
-
-                const timeA =
-                    a.timestamp?.seconds ||
-                    0;
-
-
-                const timeB =
-                    b.timestamp?.seconds ||
-                    0;
-
-
-                return timeB - timeA;
-
-            }
-        );
-
-
-        updateAttendanceStats(
+        renderAttendance(
             attendanceRecords
         );
-
-
-        renderAttendanceTable(
-            attendanceRecords
-        );
-
 
     } catch (error) {
 
         console.error(
-            "Loading attendance failed:",
+            "Load attendance error:",
             error
         );
 
-
-        attendanceTableBody.innerHTML =
-            `
-            <tr>
-
-                <td colspan="7">
-                    ❌ Unable to load attendance records.
-                </td>
-
-            </tr>
-            `;
-
+        if (attendanceTableBody) {
+            attendanceTableBody.innerHTML =
+                `<tr>
+                    <td colspan="7">
+                        Unable to load attendance.
+                    </td>
+                </tr>`;
+        }
     }
-
 }
 
+// ==========================================
+// RENDER ATTENDANCE
+// ==========================================
+
+function renderAttendance(records) {
+
+    if (!attendanceTableBody) return;
+
+    const search =
+        attendanceSearch?.value
+            ?.trim()
+            .toLowerCase() || "";
+
+    const filtered =
+        records.filter((record) => {
+
+            if (!search) return true;
+
+            const text = [
+                record.studentName,
+                record.studentMatric,
+                record.studentEmail,
+                record.courseCode,
+                record.courseTitle,
+                record.date,
+                record.status
+            ]
+                .join(" ")
+                .toLowerCase();
+
+            return text.includes(search);
+        });
+
+    updateAttendanceStats(records);
+
+    if (filtered.length === 0) {
+
+        attendanceTableBody.innerHTML =
+            `<tr>
+                <td colspan="7">
+                    No attendance records found.
+                </td>
+            </tr>`;
+
+        return;
+    }
+
+    filtered.sort((a, b) => {
+
+        const aTime =
+            a.timestamp?.seconds || 0;
+
+        const bTime =
+            b.timestamp?.seconds || 0;
+
+        return bTime - aTime;
+    });
+
+    attendanceTableBody.innerHTML =
+        filtered.map((record) => {
+
+            return `
+                <tr>
+
+                    <td>
+                        ${escapeHTML(
+                            record.studentName ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            record.studentMatric ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            record.courseCode ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            record.date ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            record.status ||
+                            "Present"
+                        )}
+                    </td>
+
+                    <td>
+                        ${record.testingMode
+                            ? "Testing"
+                            : "Normal"}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            record.distance != null
+                                ? `${Math.round(
+                                    Number(
+                                        record.distance
+                                    )
+                                  )}m`
+                                : "-"
+                        )}
+                    </td>
+
+                </tr>
+            `;
+
+        }).join("");
+}
 
 // ==========================================
 // ATTENDANCE STATISTICS
 // ==========================================
 
-function updateAttendanceStats(
-    records
-) {
+function updateAttendanceStats(records) {
 
     const today =
-        getLocalDate();
-
+        getToday();
 
     const todayRecords =
         records.filter(
@@ -1750,554 +1335,204 @@ function updateAttendanceStats(
                 record.date === today
         );
 
-
     const students =
         new Set();
 
+    records.forEach((record) => {
 
-    records.forEach(
-        (record) => {
+        const id =
+            record.studentId ||
+            record.studentMatric ||
+            record.studentEmail;
 
-            if (record.studentId) {
-
-                students.add(
-                    record.studentId
-                );
-
-            }
-
+        if (id) {
+            students.add(id);
         }
-    );
-
+    });
 
     if (totalAttendance) {
-
         totalAttendance.textContent =
             records.length;
-
     }
-
 
     if (todayAttendance) {
-
         todayAttendance.textContent =
             todayRecords.length;
-
     }
-
 
     if (uniqueStudents) {
-
         uniqueStudents.textContent =
             students.size;
-
     }
-
 }
 
-
 // ==========================================
-// RENDER ATTENDANCE TABLE
+// AUTHENTICATION
 // ==========================================
 
-function renderAttendanceTable(
-    records
-) {
+onAuthStateChanged(
+    auth,
+    async (user) => {
 
-    if (!attendanceTableBody) {
-        return;
-    }
+        if (!user) {
 
+            window.location.href =
+                "admin-auth.html";
 
-    const searchTerm =
-        attendanceSearch?.value
-            ?.trim()
-            .toLowerCase() || "";
-
-
-    const filtered =
-        records.filter(
-            (record) => {
-
-                if (!searchTerm) {
-                    return true;
-                }
-
-
-                const searchableText = [
-
-                    record.studentName,
-
-                    record.matricNumber,
-
-                    record.email,
-
-                    record.courseCode,
-
-                    record.courseTitle,
-
-                    record.date,
-
-                    record.status
-
-                ]
-                    .filter(Boolean)
-                    .join(" ")
-                    .toLowerCase();
-
-
-                return searchableText.includes(
-                    searchTerm
-                );
-
-            }
-        );
-
-
-    if (!filtered.length) {
-
-        attendanceTableBody.innerHTML =
-            `
-            <tr>
-
-                <td colspan="7">
-                    No attendance records found.
-                </td>
-
-            </tr>
-            `;
-
-        return;
-    }
-
-
-    attendanceTableBody.innerHTML =
-        "";
-
-
-    filtered.forEach(
-        (record) => {
-
-            const row =
-                document.createElement(
-                    "tr"
-                );
-
-
-            const isTest =
-                record.testingMode === true ||
-                record.status === "Test Attendance";
-
-
-            const status =
-                isTest
-                    ? "🧪 Test Attendance"
-                    : "✅ Present";
-
-
-            let timestamp =
-                "-";
-
-
-            if (
-                record.timestamp &&
-                record.timestamp.seconds
-            ) {
-
-                timestamp =
-                    new Date(
-                        record.timestamp.seconds *
-                        1000
-                    ).toLocaleTimeString(
-                        [],
-                        {
-                            hour:
-                                "2-digit",
-
-                            minute:
-                                "2-digit"
-                        }
-                    );
-
-            }
-
-
-            let distanceText =
-                "-";
-
-
-            if (
-                record.distance !== null &&
-                record.distance !== undefined &&
-                Number.isFinite(
-                    Number(
-                        record.distance
-                    )
-                )
-            ) {
-
-                distanceText =
-                    `${Math.round(
-                        Number(
-                            record.distance
-                        )
-                    )}m`;
-
-            }
-
-
-            const radiusText =
-                Number.isFinite(
-                    Number(
-                        record.radius
-                    )
-                )
-
-                    ? `${record.radius}m`
-
-                    : "-";
-
-
-            row.innerHTML = `
-
-                <td>
-
-                    <strong>
-                        ${escapeHTML(
-                            record.studentName ||
-                            "-"
-                        )}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(
-                            record.email ||
-                            ""
-                        )}
-                    </small>
-
-                </td>
-
-
-                <td>
-                    ${escapeHTML(
-                        record.matricNumber ||
-                        "-"
-                    )}
-                </td>
-
-
-                <td>
-
-                    <strong>
-                        ${escapeHTML(
-                            record.courseCode ||
-                            "-"
-                        )}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(
-                            record.courseTitle ||
-                            ""
-                        )}
-                    </small>
-
-                </td>
-
-
-                <td>
-                    ${escapeHTML(
-                        record.date ||
-                        "-"
-                    )}
-                </td>
-
-
-                <td>
-                    ${timestamp}
-                </td>
-
-
-                <td>
-                    ${distanceText}
-                </td>
-
-
-                <td>
-
-                    <span class="${
-                        isTest
-                            ? "test-status"
-                            : "present-status"
-                    }">
-
-                        ${status}
-
-                    </span>
-
-                    <small>
-                        Radius: ${radiusText}
-                    </small>
-
-                </td>
-
-            `;
-
-
-            attendanceTableBody.appendChild(
-                row
-            );
-
+            return;
         }
-    );
 
-}
+        try {
 
+            const userRef =
+                doc(db, "users", user.uid);
 
-// ==========================================
-// SEARCH ATTENDANCE
-// ==========================================
+            const userSnap =
+                await getDoc(userRef);
 
-if (attendanceSearch) {
+            if (!userSnap.exists()) {
 
-    attendanceSearch.addEventListener(
-        "input",
-        () => {
+                await signOut(auth);
 
-            renderAttendanceTable(
-                attendanceRecords
-            );
+                window.location.href =
+                    "admin-auth.html";
 
-        }
-    );
-
-}
-
-
-// ==========================================
-// REFRESH ATTENDANCE
-// ==========================================
-
-if (refreshAttendanceBtn) {
-
-    refreshAttendanceBtn.addEventListener(
-        "click",
-        async () => {
-
-            refreshAttendanceBtn.disabled =
-                true;
-
-
-            refreshAttendanceBtn.textContent =
-                "Refreshing...";
-
-
-            await loadAttendance();
-
-
-            refreshAttendanceBtn.disabled =
-                false;
-
-
-            refreshAttendanceBtn.textContent =
-                "🔄 Refresh Attendance";
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// REFRESH SESSIONS
-// ==========================================
-
-if (refreshSessionsBtn) {
-
-    refreshSessionsBtn.addEventListener(
-        "click",
-        async () => {
-
-            refreshSessionsBtn.disabled =
-                true;
-
-
-            refreshSessionsBtn.textContent =
-                "Refreshing...";
-
-
-            await loadActiveSessions();
-
-
-            refreshSessionsBtn.disabled =
-                false;
-
-
-            refreshSessionsBtn.textContent =
-                "🔄 Refresh Sessions";
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// COPY ATTENDANCE CODE
-// ==========================================
-
-if (copyAttendanceCodeBtn) {
-
-    copyAttendanceCodeBtn.addEventListener(
-        "click",
-        async () => {
-
-            const code =
-                generatedAttendanceCode
-                    ?.textContent
-                    ?.trim();
-
-
-            if (!code) {
                 return;
             }
 
+            const userData =
+                userSnap.data();
 
-            try {
+            if (userData.role !== "admin") {
 
-                await navigator.clipboard.writeText(
-                    code
+                alert(
+                    "You do not have administrator access."
                 );
 
+                await signOut(auth);
 
-                copyAttendanceCodeBtn.textContent =
-                    "Copied ✓";
+                window.location.href =
+                    "admin-auth.html";
 
-
-                setTimeout(
-                    () => {
-
-                        copyAttendanceCodeBtn.textContent =
-                            "📋 Copy Code";
-
-                    },
-                    2000
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Copy failed:",
-                    error
-                );
-
-
-                // Fallback
-
-                const textArea =
-                    document.createElement(
-                        "textarea"
-                    );
-
-
-                textArea.value =
-                    code;
-
-
-                document.body.appendChild(
-                    textArea
-                );
-
-
-                textArea.select();
-
-
-                try {
-
-                    document.execCommand(
-                        "copy"
-                    );
-
-                    copyAttendanceCodeBtn.textContent =
-                        "Copied ✓";
-
-                } catch (copyError) {
-
-                    console.error(
-                        "Fallback copy failed:",
-                        copyError
-                    );
-
-                }
-
-
-                document.body.removeChild(
-                    textArea
-                );
-
-
-                setTimeout(
-                    () => {
-
-                        copyAttendanceCodeBtn.textContent =
-                            "📋 Copy Code";
-
-                    },
-                    2000
-                );
-
+                return;
             }
 
+            currentAdmin = {
+                uid: user.uid,
+                email: user.email,
+                ...userData
+            };
+
+            console.log(
+                "Admin authenticated:",
+                currentAdmin
+            );
+
+            // Load everything separately.
+            // One failed section will not destroy the whole page.
+
+            await loadTestingMode();
+            await loadCourses();
+            await loadActiveSessions();
+            await loadAttendance();
+
+        } catch (error) {
+
+            console.error(
+                "Admin authentication error:",
+                error
+            );
+
+            alert(
+                "Unable to load Admin Portal. Check the browser console."
+            );
         }
-    );
-
-}
-
+    }
+);
 
 // ==========================================
-// DEFAULT SESSION DATE
+// EVENT LISTENERS
+// ==========================================
+
+if (courseForm) {
+    courseForm.addEventListener(
+        "submit",
+        saveCourse
+    );
+}
+
+if (getLocationBtn) {
+    getLocationBtn.addEventListener(
+        "click",
+        getLocation
+    );
+}
+
+if (refreshCoursesBtn) {
+    refreshCoursesBtn.addEventListener(
+        "click",
+        loadCourses
+    );
+}
+
+if (sessionForm) {
+    sessionForm.addEventListener(
+        "submit",
+        createSession
+    );
+}
+
+if (refreshSessionsBtn) {
+    refreshSessionsBtn.addEventListener(
+        "click",
+        loadActiveSessions
+    );
+}
+
+if (copyAttendanceCodeBtn) {
+    copyAttendanceCodeBtn.addEventListener(
+        "click",
+        copyAttendanceCode
+    );
+}
+
+if (testingModeBtn) {
+    testingModeBtn.addEventListener(
+        "click",
+        toggleTestingMode
+    );
+}
+
+if (refreshAttendanceBtn) {
+    refreshAttendanceBtn.addEventListener(
+        "click",
+        loadAttendance
+    );
+}
+
+if (attendanceSearch) {
+    attendanceSearch.addEventListener(
+        "input",
+        () => {
+            renderAttendance(
+                attendanceRecords
+            );
+        }
+    );
+}
+
+// ==========================================
+// INITIAL DATE
 // ==========================================
 
 if (sessionDate) {
-
-    sessionDate.value =
-        getLocalDate();
-
+    sessionDate.value = getToday();
 }
 
-
 // ==========================================
-// ESCAPE HTML
+// FINAL LOG
 // ==========================================
 
-function escapeHTML(
-    value
-) {
-
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
+console.log(
+    "AttendCheck Admin Portal loaded successfully."
+);
