@@ -12,6 +12,7 @@
 <body>
 
 <header class="site-header">
+
     <div class="container header-content">
 
         <a href="index.html" class="logo">
@@ -27,6 +28,7 @@
         </nav>
 
     </div>
+
 </header>
 
 
@@ -36,546 +38,102 @@
 
 <div class="container">
 
-    <!-- ==========================================
-         PAGE HEADER
-    =========================================== -->
 
-    <div class="section-heading">
+<!-- ==========================================
+     PAGE HEADER
+=========================================== -->
 
-        <span class="badge">
-            Admin Portal
-        </span>
+<div class="section-heading">
 
-        <h1>
-            Attendance Management
-        </h1>
+    <span class="badge">
+        Admin Portal
+    </span>
 
-        <p>
-            Manage courses, attendance sessions,
-            testing and student attendance.
-        </p>
+    <h1>
+        Attendance Management
+    </h1>
 
-    </div>
+    <p>
+        Manage courses, attendance sessions,
+        testing and student attendance.
+    </p>
 
+</div>
 
-    <!-- ==========================================
-         TESTING MODE
-    =========================================== -->
 
-    <div class="portal-card">
+<!-- ==========================================
+     TESTING MODE
+=========================================== -->
 
-        <div class="card-heading">
+<div class="portal-card">
 
-            <div>
+    <div class="card-heading">
 
-                <span class="small-label">
-                    Developer Testing
-                </span>
-
-                <h2>
-                    🧪 Testing Mode
-                </h2>
-
-            </div>
-
-            <div class="card-icon">
-                🛠️
-            </div>
-
-        </div>
-
-
-        <p>
-            Testing Mode allows you and your friends to
-            test attendance before publishing the system.
-            GPS distance restrictions are temporarily
-            bypassed for testing attendance only.
-        </p>
-
-
-        <div
-            class="portal-card"
-            style="
-                margin-top:20px;
-                padding:20px;
-            "
-        >
-
-            <div
-                style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:20px;
-                    flex-wrap:wrap;
-                "
-            >
-
-                <div>
-
-                    <h3>
-                        Testing Mode
-                    </h3>
-
-                    <p
-                        id="testingModeStatus"
-                        style="margin-bottom:0;"
-                    >
-                        🔴 Testing Mode is OFF
-                    </p>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    id="testingModeBtn"
-                    class="secondary-btn"
-                >
-                    🧪 Enable Testing Mode
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div
-            id="testingModeMessage"
-            class="auth-message"
-            style="margin-top:15px;"
-        >
-            Testing Mode is currently disabled.
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         COURSE SETUP
-    =========================================== -->
-
-    <div class="portal-card">
-
-        <div class="card-heading">
-
-            <div>
-
-                <span class="small-label">
-                    Course Setup
-                </span>
-
-                <h2>
-                    Add New Course
-                </h2>
-
-            </div>
-
-            <div class="card-icon">
-                📚
-            </div>
-
-        </div>
-
-
-        <form id="courseForm">
-
-            <div class="form-group">
-
-                <label for="courseCode">
-                    Course Code
-                </label>
-
-                <input
-                    type="text"
-                    id="courseCode"
-                    placeholder="e.g. CSC308"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="courseTitle">
-                    Course Title
-                </label>
-
-                <input
-                    type="text"
-                    id="courseTitle"
-                    placeholder="e.g. Operating Systems"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="classLocation">
-                    Class Location
-                </label>
-
-                <input
-                    type="text"
-                    id="classLocation"
-                    placeholder="e.g. Computer Science Hall"
-                    required
-                >
-
-            </div>
-
-
-            <div
-                class="portal-card"
-                style="
-                    margin-top:20px;
-                    padding:20px;
-                "
-            >
-
-                <h3>
-                    📍 Class GPS Location
-                </h3>
-
-                <p>
-                    Go to the classroom and capture
-                    its current GPS location.
-                </p>
-
-
-                <button
-                    type="button"
-                    id="getLocationBtn"
-                    class="secondary-btn"
-                >
-                    📍 Get My Current Location
-                </button>
-
-
-                <div
-                    id="locationMessage"
-                    class="auth-message"
-                    style="margin-top:15px;"
-                >
-                    Location has not been captured yet.
-                </div>
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="latitude">
-                    Latitude
-                </label>
-
-                <input
-                    type="number"
-                    id="latitude"
-                    step="any"
-                    placeholder="Latitude"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="longitude">
-                    Longitude
-                </label>
-
-                <input
-                    type="number"
-                    id="longitude"
-                    step="any"
-                    placeholder="Longitude"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="radius">
-                    Attendance Radius
-                </label>
-
-                <select id="radius" required>
-
-                    <option value="25">
-                        25 meters
-                    </option>
-
-                    <option value="50">
-                        50 meters
-                    </option>
-
-                    <option value="100">
-                        100 meters
-                    </option>
-
-                    <option value="200" selected>
-                        200 meters
-                    </option>
-
-                    <option value="500">
-                        500 meters
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="primary-btn"
-            >
-                ➕ Add Course
-            </button>
-
-        </form>
-
-    </div>
-
-
-    <!-- ==========================================
-         COURSE MANAGEMENT
-    =========================================== -->
-
-    <div class="portal-card">
-
-        <div class="card-heading">
-
-            <div>
-
-                <span class="small-label">
-                    Course Management
-                </span>
-
-                <h2>
-                    Manage Courses
-                </h2>
-
-            </div>
-
-            <div class="card-icon">
-                🗂️
-            </div>
-
-        </div>
-
-
-        <p>
-            View and manage all courses registered
-            in the AttendCheck system.
-        </p>
-
-
-        <button
-            type="button"
-            id="refreshCoursesBtn"
-            class="secondary-btn"
-            style="margin-top:10px;"
-        >
-            🔄 Refresh Courses
-        </button>
-
-
-        <div
-            id="coursesMessage"
-            class="auth-message"
-            style="margin-top:15px;"
-        >
-            Loading courses...
-        </div>
-
-
-        <div
-            id="courseManagementList"
-            style="margin-top:20px;"
-        >
-
-            <div
-                class="portal-card"
-                style="padding:20px;"
-            >
-
-                <p>
-                    Loading courses...
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         CREATE ATTENDANCE SESSION
-    =========================================== -->
-
-    <div class="portal-card">
-
-        <div class="card-heading">
-
-            <div>
-
-                <span class="small-label">
-                    Attendance Session
-                </span>
-
-                <h2>
-                    Create Attendance Session
-                </h2>
-
-            </div>
-
-            <div class="card-icon">
-                🔐
-            </div>
-
-        </div>
-
-
-        <p>
-            Create a temporary attendance session and
-            generate a 6-digit attendance code.
-        </p>
-
-
-        <form id="sessionForm">
-
-            <div class="form-group">
-
-                <label for="sessionCourse">
-                    Select Course
-                </label>
-
-                <select
-                    id="sessionCourse"
-                    required
-                >
-
-                    <option value="">
-                        Loading courses...
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="sessionDate">
-                    Attendance Date
-                </label>
-
-                <input
-                    type="date"
-                    id="sessionDate"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="sessionStartTime">
-                    Start Time
-                </label>
-
-                <input
-                    type="time"
-                    id="sessionStartTime"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="sessionEndTime">
-                    End Time
-                </label>
-
-                <input
-                    type="time"
-                    id="sessionEndTime"
-                    required
-                >
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="primary-btn"
-            >
-                🔑 Generate Attendance Code
-            </button>
-
-        </form>
-
-
-        <div
-            id="sessionMessage"
-            class="auth-message"
-            style="margin-top:20px;"
-        >
-            No attendance session created yet.
-        </div>
-
-
-        <div
-            id="generatedCodeBox"
-            class="portal-card"
-            style="
-                display:none;
-                margin-top:20px;
-                padding:25px;
-                text-align:center;
-            "
-        >
+        <div>
 
             <span class="small-label">
-                Attendance Code
+                Developer Testing
             </span>
 
+            <h2>
+                🧪 Testing Mode
+            </h2>
 
-            <h1
-                id="generatedAttendanceCode"
-                style="
-                    font-size:42px;
-                    letter-spacing:8px;
-                    margin:15px 0;
-                "
-            >
-                ------
-            </h1>
+        </div>
+
+        <div class="card-icon">
+            🛠️
+        </div>
+
+    </div>
 
 
-            <p>
-                Give this code to the student.
-            </p>
+    <p>
+        Testing Mode allows you to test attendance
+        without normal GPS distance restrictions.
+    </p>
+
+
+    <div
+        class="portal-card"
+        style="
+            margin-top:20px;
+            padding:20px;
+        "
+    >
+
+        <div
+            style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:20px;
+                flex-wrap:wrap;
+            "
+        >
+
+            <div>
+
+                <h3>
+                    Testing Mode
+                </h3>
+
+                <p
+                    id="testingModeStatus"
+                    style="margin-bottom:0;"
+                >
+                    🔴 Testing Mode is OFF
+                </p>
+
+            </div>
 
 
             <button
                 type="button"
-                id="copyAttendanceCodeBtn"
+                id="testingModeBtn"
                 class="secondary-btn"
             >
-                📋 Copy Code
+                🧪 Enable Testing Mode
             </button>
 
         </div>
@@ -583,264 +141,1021 @@
     </div>
 
 
-    <!-- ==========================================
-         ACTIVE ATTENDANCE SESSIONS
-    =========================================== -->
+    <div
+        id="testingModeMessage"
+        class="auth-message"
+        style="margin-top:15px;"
+    >
+        Testing Mode is currently disabled.
+    </div>
 
-    <div class="portal-card">
+</div>
 
-        <div class="card-heading">
 
-            <div>
+<!-- ==========================================
+     COURSE SETUP
+=========================================== -->
 
-                <span class="small-label">
-                    Session Management
-                </span>
+<div class="portal-card">
 
-                <h2>
-                    Active Attendance Sessions
-                </h2>
+    <div class="card-heading">
 
-            </div>
+        <div>
 
-            <div class="card-icon">
-                🟢
-            </div>
+            <span class="small-label">
+                Course Setup
+            </span>
+
+            <h2>
+                Add New Course
+            </h2>
 
         </div>
 
-
-        <p>
-            View and manage attendance sessions that
-            have been created.
-        </p>
-
-
-        <button
-            type="button"
-            id="refreshSessionsBtn"
-            class="secondary-btn"
-            style="margin-top:10px;"
-        >
-            🔄 Refresh Sessions
-        </button>
-
-
-        <div
-            id="sessionsMessage"
-            class="auth-message"
-            style="margin-top:15px;"
-        >
-            Loading sessions...
-        </div>
-
-
-        <div
-            id="activeSessionsList"
-            style="margin-top:20px;"
-        >
-
-            <div
-                class="portal-card"
-                style="padding:20px;"
-            >
-
-                <p>
-                    Loading attendance sessions...
-                </p>
-
-            </div>
-
+        <div class="card-icon">
+            📚
         </div>
 
     </div>
 
 
-    <!-- ==========================================
-         ATTENDANCE DASHBOARD
-    =========================================== -->
+    <form id="courseForm">
 
-    <div class="portal-card">
+        <div class="form-group">
 
-        <div class="card-heading">
+            <label for="courseCode">
+                Course Code
+            </label>
 
-            <div>
-
-                <span class="small-label">
-                    Attendance
-                </span>
-
-                <h2>
-                    Student Attendance Records
-                </h2>
-
-            </div>
-
-            <div class="card-icon">
-                👥
-            </div>
+            <input
+                type="text"
+                id="courseCode"
+                placeholder="e.g. CSC308"
+                required
+            >
 
         </div>
 
 
-        <!-- STATISTICS -->
+        <div class="form-group">
 
-        <div class="steps-grid">
+            <label for="courseTitle">
+                Course Title
+            </label>
 
-            <div class="step-card">
-
-                <div class="step-number">
-                    👥
-                </div>
-
-                <h3 id="totalAttendance">
-                    0
-                </h3>
-
-                <p>
-                    Total Attendance
-                </p>
-
-            </div>
-
-
-            <div class="step-card">
-
-                <div class="step-number">
-                    📚
-                </div>
-
-                <h3 id="todayAttendance">
-                    0
-                </h3>
-
-                <p>
-                    Today's Attendance
-                </p>
-
-            </div>
-
-
-            <div class="step-card">
-
-                <div class="step-number">
-                    🎓
-                </div>
-
-                <h3 id="uniqueStudents">
-                    0
-                </h3>
-
-                <p>
-                    Students Present
-                </p>
-
-            </div>
+            <input
+                type="text"
+                id="courseTitle"
+                placeholder="e.g. Operating Systems"
+                required
+            >
 
         </div>
 
 
-        <!-- SEARCH -->
+        <div class="form-group">
+
+            <label for="classLocation">
+                Class Location
+            </label>
+
+            <input
+                type="text"
+                id="classLocation"
+                placeholder="e.g. Computer Science Hall"
+                required
+            >
+
+        </div>
+
 
         <div
             class="portal-card"
             style="
-                margin-top:25px;
+                margin-top:20px;
                 padding:20px;
             "
         >
 
             <h3>
-                🔎 Search Attendance
+                📍 Class GPS Location
             </h3>
 
-
-            <div class="form-group">
-
-                <label for="attendanceSearch">
-                    Search student, matric number or course
-                </label>
-
-                <input
-                    type="text"
-                    id="attendanceSearch"
-                    placeholder="Search..."
-                >
-
-            </div>
+            <p>
+                Go to the classroom and capture
+                its current GPS location.
+            </p>
 
 
             <button
                 type="button"
-                id="refreshAttendanceBtn"
+                id="getLocationBtn"
                 class="secondary-btn"
             >
-                🔄 Refresh Attendance
+                📍 Get My Current Location
+            </button>
+
+
+            <div
+                id="locationMessage"
+                class="auth-message"
+                style="margin-top:15px;"
+            >
+                Location has not been captured yet.
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="latitude">
+                Latitude
+            </label>
+
+            <input
+                type="number"
+                id="latitude"
+                step="any"
+                placeholder="Latitude"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="longitude">
+                Longitude
+            </label>
+
+            <input
+                type="number"
+                id="longitude"
+                step="any"
+                placeholder="Longitude"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="radius">
+                Attendance Radius
+            </label>
+
+            <select id="radius" required>
+
+                <option value="25">
+                    25 meters
+                </option>
+
+                <option value="50">
+                    50 meters
+                </option>
+
+                <option value="100">
+                    100 meters
+                </option>
+
+                <option value="200" selected>
+                    200 meters
+                </option>
+
+                <option value="500">
+                    500 meters
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="primary-btn"
+        >
+            ➕ Add Course
+        </button>
+
+    </form>
+
+</div>
+
+
+<!-- ==========================================
+     COURSE MANAGEMENT
+=========================================== -->
+
+<div class="portal-card">
+
+    <div class="card-heading">
+
+        <div>
+
+            <span class="small-label">
+                Course Management
+            </span>
+
+            <h2>
+                Manage Courses
+            </h2>
+
+        </div>
+
+        <div class="card-icon">
+            🗂️
+        </div>
+
+    </div>
+
+
+    <p>
+        View and manage all courses registered
+        in the AttendCheck system.
+    </p>
+
+
+    <button
+        type="button"
+        id="refreshCoursesBtn"
+        class="secondary-btn"
+        style="margin-top:10px;"
+    >
+        🔄 Refresh Courses
+    </button>
+
+
+    <div
+        id="coursesMessage"
+        class="auth-message"
+        style="margin-top:15px;"
+    >
+        Loading courses...
+    </div>
+
+
+    <div
+        id="courseManagementList"
+        style="margin-top:20px;"
+    >
+
+        <div
+            class="portal-card"
+            style="padding:20px;"
+        >
+
+            <p>
+                Loading courses...
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     CREATE ATTENDANCE SESSION
+=========================================== -->
+
+<div class="portal-card">
+
+    <div class="card-heading">
+
+        <div>
+
+            <span class="small-label">
+                Attendance Session
+            </span>
+
+            <h2>
+                Create Attendance Session
+            </h2>
+
+        </div>
+
+        <div class="card-icon">
+            🔐
+        </div>
+
+    </div>
+
+
+    <p>
+        Create a temporary attendance session and
+        generate a 6-digit attendance code.
+    </p>
+
+
+    <form id="sessionForm">
+
+        <div class="form-group">
+
+            <label for="sessionCourse">
+                Select Course
+            </label>
+
+            <select
+                id="sessionCourse"
+                required
+            >
+
+                <option value="">
+                    Loading courses...
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="sessionDate">
+                Attendance Date
+            </label>
+
+            <input
+                type="date"
+                id="sessionDate"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="sessionStartTime">
+                Start Time
+            </label>
+
+            <input
+                type="time"
+                id="sessionStartTime"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="sessionEndTime">
+                End Time
+            </label>
+
+            <input
+                type="time"
+                id="sessionEndTime"
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="primary-btn"
+        >
+            🔑 Generate Attendance Code
+        </button>
+
+    </form>
+
+
+    <div
+        id="sessionMessage"
+        class="auth-message"
+        style="margin-top:20px;"
+    >
+        No attendance session created yet.
+    </div>
+
+
+    <div
+        id="generatedCodeBox"
+        class="portal-card"
+        style="
+            display:none;
+            margin-top:20px;
+            padding:25px;
+            text-align:center;
+        "
+    >
+
+        <span class="small-label">
+            Attendance Code
+        </span>
+
+
+        <h1
+            id="generatedAttendanceCode"
+            style="
+                font-size:42px;
+                letter-spacing:8px;
+                margin:15px 0;
+            "
+        >
+            ------
+        </h1>
+
+
+        <p>
+            Give this code to the students.
+        </p>
+
+
+        <button
+            type="button"
+            id="copyAttendanceCodeBtn"
+            class="secondary-btn"
+        >
+            📋 Copy Code
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     ACTIVE ATTENDANCE SESSIONS
+=========================================== -->
+
+<div class="portal-card">
+
+    <div class="card-heading">
+
+        <div>
+
+            <span class="small-label">
+                Session Management
+            </span>
+
+            <h2>
+                Active Attendance Sessions
+            </h2>
+
+        </div>
+
+        <div class="card-icon">
+            🟢
+        </div>
+
+    </div>
+
+
+    <p>
+        View and manage attendance sessions
+        that have been created.
+    </p>
+
+
+    <button
+        type="button"
+        id="refreshSessionsBtn"
+        class="secondary-btn"
+        style="margin-top:10px;"
+    >
+        🔄 Refresh Sessions
+    </button>
+
+
+    <div
+        id="sessionsMessage"
+        class="auth-message"
+        style="margin-top:15px;"
+    >
+        Loading sessions...
+    </div>
+
+
+    <div
+        id="activeSessionsList"
+        style="margin-top:20px;"
+    >
+
+        <div
+            class="portal-card"
+            style="padding:20px;"
+        >
+
+            <p>
+                Loading attendance sessions...
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     ATTENDANCE DASHBOARD
+=========================================== -->
+
+<div class="portal-card">
+
+    <div class="card-heading">
+
+        <div>
+
+            <span class="small-label">
+                Attendance
+            </span>
+
+            <h2>
+                Student Attendance Records
+            </h2>
+
+        </div>
+
+        <div class="card-icon">
+            👥
+        </div>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <div class="steps-grid">
+
+        <div class="step-card">
+
+            <div class="step-number">
+                👥
+            </div>
+
+            <h3 id="totalAttendance">
+                0
+            </h3>
+
+            <p>
+                Total Attendance
+            </p>
+
+        </div>
+
+
+        <div class="step-card">
+
+            <div class="step-number">
+                📚
+            </div>
+
+            <h3 id="todayAttendance">
+                0
+            </h3>
+
+            <p>
+                Today's Attendance
+            </p>
+
+        </div>
+
+
+        <div class="step-card">
+
+            <div class="step-number">
+                🎓
+            </div>
+
+            <h3 id="uniqueStudents">
+                0
+            </h3>
+
+            <p>
+                Students Present
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH -->
+
+    <div
+        class="portal-card"
+        style="
+            margin-top:25px;
+            padding:20px;
+        "
+    >
+
+        <h3>
+            🔎 Search Attendance
+        </h3>
+
+
+        <div class="form-group">
+
+            <label for="attendanceSearch">
+                Search student, matric number or course
+            </label>
+
+            <input
+                type="text"
+                id="attendanceSearch"
+                placeholder="Search..."
+            >
+
+        </div>
+
+
+        <button
+            type="button"
+            id="refreshAttendanceBtn"
+            class="secondary-btn"
+        >
+            🔄 Refresh Attendance
+        </button>
+
+    </div>
+
+
+    <!-- ATTENDANCE TABLE -->
+
+    <div class="attendance-table-wrapper">
+
+        <table class="attendance-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Student
+                    </th>
+
+                    <th>
+                        Matric Number
+                    </th>
+
+                    <th>
+                        Course
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Time
+                    </th>
+
+                    <th>
+                        Distance
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="attendanceTableBody">
+
+                <tr>
+
+                    <td colspan="7">
+                        Loading attendance...
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     ATTENDANCE REPORTS
+=========================================== -->
+
+<div class="portal-card">
+
+    <div class="card-heading">
+
+        <div>
+
+            <span class="small-label">
+                Reports & Analytics
+            </span>
+
+            <h2>
+                📊 Attendance Reports
+            </h2>
+
+        </div>
+
+        <div class="card-icon">
+            📈
+        </div>
+
+    </div>
+
+
+    <p>
+        View attendance statistics and attendance
+        performance by course.
+    </p>
+
+
+    <!-- REPORT STATISTICS -->
+
+    <div class="steps-grid">
+
+        <div class="step-card">
+
+            <div class="step-number">
+                🔐
+            </div>
+
+            <h3 id="reportTotalSessions">
+                0
+            </h3>
+
+            <p>
+                Total Sessions
+            </p>
+
+        </div>
+
+
+        <div class="step-card">
+
+            <div class="step-number">
+                👥
+            </div>
+
+            <h3 id="reportTotalAttendance">
+                0
+            </h3>
+
+            <p>
+                Total Attendance
+            </p>
+
+        </div>
+
+
+        <div class="step-card">
+
+            <div class="step-number">
+                🎓
+            </div>
+
+            <h3 id="reportUniqueStudents">
+                0
+            </h3>
+
+            <p>
+                Unique Students
+            </p>
+
+        </div>
+
+
+        <div class="step-card">
+
+            <div class="step-number">
+                📈
+            </div>
+
+            <h3 id="reportAttendanceRate">
+                0%
+            </h3>
+
+            <p>
+                Overall Attendance Rate
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- REPORT FILTER -->
+
+    <div
+        class="portal-card"
+        style="
+            margin-top:25px;
+            padding:20px;
+        "
+    >
+
+        <h3>
+            🔎 Filter Reports
+        </h3>
+
+
+        <div class="form-group">
+
+            <label for="reportCourseFilter">
+                Course
+            </label>
+
+            <select id="reportCourseFilter">
+
+                <option value="">
+                    All Courses
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="reportDateFilter">
+                Date
+            </label>
+
+            <input
+                type="date"
+                id="reportDateFilter"
+            >
+
+        </div>
+
+
+        <div
+            style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            "
+        >
+
+            <button
+                type="button"
+                id="generateReportBtn"
+                class="primary-btn"
+            >
+                📊 Generate Report
+            </button>
+
+
+            <button
+                type="button"
+                id="refreshReportBtn"
+                class="secondary-btn"
+            >
+                🔄 Refresh Report
             </button>
 
         </div>
 
 
-        <!-- ATTENDANCE TABLE -->
-
-        <div class="attendance-table-wrapper">
-
-            <table class="attendance-table">
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            Student
-                        </th>
-
-                        <th>
-                            Matric Number
-                        </th>
-
-                        <th>
-                            Course
-                        </th>
-
-                        <th>
-                            Date
-                        </th>
-
-                        <th>
-                            Time
-                        </th>
-
-                        <th>
-                            Distance
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="attendanceTableBody">
-
-                    <tr>
-
-                        <td colspan="7">
-                            Loading attendance...
-                        </td>
-
-                    </tr>
-
-                </tbody>
-
-            </table>
-
+        <div
+            id="reportMessage"
+            class="auth-message"
+            style="margin-top:15px;"
+        >
+            Select your filters and generate a report.
         </div>
 
     </div>
+
+
+    <!-- COURSE REPORT -->
+
+    <div
+        style="
+            margin-top:25px;
+            overflow-x:auto;
+        "
+    >
+
+        <table class="attendance-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Course
+                    </th>
+
+                    <th>
+                        Sessions
+                    </th>
+
+                    <th>
+                        Attendance
+                    </th>
+
+                    <th>
+                        Students
+                    </th>
+
+                    <th>
+                        Attendance Rate
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="attendanceReportTableBody">
+
+                <tr>
+
+                    <td colspan="5">
+                        No report generated yet.
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- STUDENT REPORT -->
+
+    <div
+        style="
+            margin-top:30px;
+            overflow-x:auto;
+        "
+    >
+
+        <h3>
+            🎓 Student Attendance Summary
+        </h3>
+
+
+        <table class="attendance-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Student
+                    </th>
+
+                    <th>
+                        Matric Number
+                    </th>
+
+                    <th>
+                        Attendance
+                    </th>
+
+                    <th>
+                        Courses
+                    </th>
+
+                    <th>
+                        Attendance Rate
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="studentReportTableBody">
+
+                <tr>
+
+                    <td colspan="5">
+                        No student report generated yet.
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
 
 </div>
 
